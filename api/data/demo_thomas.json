@@ -1,0 +1,65 @@
+[
+  {
+    "id": "cb-platform-lead",
+    "claim": "Served as internal technical lead for modernization of a digital commerce platform across Next.js, React, TypeScript, Sitecore, Vercel, and supporting APIs.",
+    "skill_tags": ["technical leadership", "next.js", "react", "typescript", "api", "vercel", "platform modernization"],
+    "source": "Sanitized public resume",
+    "source_locator": "Cracker Barrel — Technical Leadership & Platform Modernization"
+  },
+  {
+    "id": "cb-delivery",
+    "claim": "Reduced release cycles from four to six weeks to two weeks and enabled feature releases measured in hours or days through CI/CD, preview environments, and feature flags.",
+    "skill_tags": ["ci/cd", "github actions", "feature flags", "observability", "delivery", "vercel"],
+    "source": "Sanitized public resume",
+    "source_locator": "Cracker Barrel — Delivery Transformation"
+  },
+  {
+    "id": "cb-quality",
+    "claim": "Established layered testing with Jest and Playwright, contributor documentation, code-review standards, and delivery guardrails.",
+    "skill_tags": ["testing", "jest", "playwright", "documentation", "code review", "quality"],
+    "source": "Sanitized public resume",
+    "source_locator": "Cracker Barrel — Quality & Developer Experience"
+  },
+  {
+    "id": "ghost-platform",
+    "claim": "Architected a unified web dashboard and APIs for autonomous-vehicle fleet management using Nx, Next.js, and Node.js.",
+    "skill_tags": ["architecture", "next.js", "node.js", "api", "nx", "full-stack", "autonomous vehicles"],
+    "source": "Sanitized public resume",
+    "source_locator": "Ghost Autonomy — Fleet Platform"
+  },
+  {
+    "id": "ghost-python",
+    "claim": "Built working Python prototypes for pose estimation and computer-vision workflows while collaborating with machine-learning and perception engineers.",
+    "skill_tags": ["python", "prototype", "computer vision", "machine learning", "cross-functional"],
+    "source": "Sanitized candidate evidence",
+    "source_locator": "Ghost Autonomy — Driver Intent Prototype"
+  },
+  {
+    "id": "ghost-throughput",
+    "claim": "Delivered vehicle configuration, telemetry, and reporting tools that increased autonomous-vehicle test-drive throughput by approximately ten times.",
+    "skill_tags": ["api", "telemetry", "automation", "operations", "product impact"],
+    "source": "Sanitized public resume",
+    "source_locator": "Ghost Autonomy — Operational Tooling"
+  },
+  {
+    "id": "az-commerce",
+    "claim": "Co-led modernization of AutoZone.com, a customer platform serving more than 21 million monthly users, using React and Next.js.",
+    "skill_tags": ["react", "next.js", "scale", "ecommerce", "technical leadership"],
+    "source": "Sanitized public resume",
+    "source_locator": "AutoZone — Digital Commerce"
+  },
+  {
+    "id": "az-sourcing",
+    "claim": "Analyzed business processes and delivered a global sourcing platform that produced more than two million dollars in annual savings.",
+    "skill_tags": ["business analysis", "product discovery", "enterprise integration", "stakeholder management", "measurable outcomes"],
+    "source": "Sanitized public resume",
+    "source_locator": "AutoZone — Global Sourcing"
+  },
+  {
+    "id": "cross-functional",
+    "claim": "Coordinated engineering, product, design, QA, architecture, leadership, and external partners to clarify ownership and align technical decisions with launch priorities.",
+    "skill_tags": ["cross-functional", "communication", "technical leadership", "ambiguity", "stakeholder management"],
+    "source": "Sanitized public resume",
+    "source_locator": "Cracker Barrel — Cross-Functional Delivery"
+  }
+]

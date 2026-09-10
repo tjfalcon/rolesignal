@@ -1,0 +1,16 @@
+[
+  {
+    "id": "sample-web",
+    "claim": "Built and operated a TypeScript web application with React, Node.js, and REST APIs.",
+    "skill_tags": ["typescript", "react", "node.js", "api", "full-stack"],
+    "source": "Fictional sample profile",
+    "source_locator": "Sample Company — Product Engineering"
+  },
+  {
+    "id": "sample-python",
+    "claim": "Created a small Python FastAPI service with typed request validation and pytest coverage.",
+    "skill_tags": ["python", "fastapi", "pydantic", "pytest", "api"],
+    "source": "Fictional sample profile",
+    "source_locator": "Sample Project — API"
+  }
+]
