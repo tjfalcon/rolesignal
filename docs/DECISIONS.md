@@ -48,10 +48,21 @@ fixture backend. If it is configured but a query fails, the wrapper logs the fai
 deterministic fallback. `/v1/health` exposes the selected mode and database readiness so a fallback
 cannot be mistaken for successful database retrieval.
 
-The Vercel deployment currently has no `DATABASE_URL`; production therefore uses packaged
-fixtures. A managed PostgreSQL instance, migrations, and seeding are prerequisites for changing
-that behavior.
+Vercel production and preview deployments now receive Neon connection variables. The application
+uses the pooled URL; Alembic uses the unpooled URL before the build. Preview deployments migrate
+isolated database branches. Health reporting still makes runtime fallback visible.
 
 ## Store no public résumé uploads in v1
 
 The web contract accepts a preloaded profile ID, not arbitrary candidate content. This keeps the first public deployment honest and reduces privacy surface while retention, deletion, authorization, and abuse controls are unfinished.
+
+## Make active résumé versions immutable
+
+Profile edits occur on a cloned draft. Evidence can be added, edited, approved, or excluded while
+the version remains a draft. Activation archives the prior version and changes the profile's
+active pointer transactionally. This preserves the meaning of citations produced by earlier
+analyses and provides an auditable rollback history.
+
+The administrator workspace is guarded by a constant-time token comparison and fails closed when
+the secret is not configured. It accepts sanitized public evidence only. Private file uploads wait
+for user authentication, ownership checks, private object storage, and deletion controls.

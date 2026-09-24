@@ -1,4 +1,5 @@
 import Analyzer from "@/components/analyzer";
+import ProfileManager from "@/components/profile-manager";
 
 export default function Home() {
   return (
@@ -21,6 +22,7 @@ export default function Home() {
       </section>
 
       <Analyzer />
+      <ProfileManager />
 
       <footer>
         <p>No résumé uploads or job descriptions are retained in this public demo.</p>

@@ -56,17 +56,29 @@ sequenceDiagram
   Web-->>User: Results, citations, gaps, and limitations
 ```
 
-## Current evidence data model
+## Current profile and evidence data model
 
 ```mermaid
 erDiagram
-  CANDIDATE_PROFILE ||--o{ CANDIDATE_EVIDENCE : owns
+  CANDIDATE_PROFILE ||--o{ RESUME_VERSION : owns
+  RESUME_VERSION ||--o{ CANDIDATE_EVIDENCE : contains
   CANDIDATE_PROFILE {
     string id PK
+    string active_resume_version_id FK
+    string visibility
+  }
+  RESUME_VERSION {
+    string id PK
+    string profile_id FK
+    int version_number
+    string status
+    timestamp activated_at
   }
   CANDIDATE_EVIDENCE {
     string profile_id PK
     string id PK
+    string resume_version_id FK
+    boolean approved
     text claim
     jsonb skill_tags
     text skill_text
@@ -80,17 +92,19 @@ erDiagram
   }
 ```
 
-`CANDIDATE_PROFILE` is currently represented by the stable `profile_id`; it is not yet a separate
-table because v1 exposes only two preloaded profiles. Resume upload and versioning will introduce
-candidate, source-document, document-version, section, and evidence-provenance tables before
-private user content is accepted.
+Only an active version's approved public evidence participates in retrieval. Active and archived
+versions are immutable; editing begins by cloning the active version into a draft. Activation
+archives the previous version and moves the profile pointer in one database transaction.
+
+Original-document and parsed-section tables remain deferred until authentication, private object
+storage, retention, and deletion behavior are implemented.
 
 ## Storage boundaries
 
 | Information | Current storage | Retention |
 |---|---|---|
 | Sanitized candidate fixtures | Repository JSON; optionally seeded into PostgreSQL | Versioned with the repository |
-| Candidate evidence and embeddings | Local PostgreSQL when configured | Persistent Docker volume |
+| Candidate profiles, versions, evidence, embeddings | Neon production; local Docker for development | Persistent database |
 | Submitted job description | FastAPI process memory | Request processing only |
 | Completed analysis | Bounded process-local cache | Until eviction or process restart |
 | Original resume files | Not accepted | None |
@@ -108,19 +122,16 @@ flowchart LR
     LocalAPI --> LocalDB
   end
 
-  subgraph Production[Vercel production today]
+  subgraph Production[Vercel production]
     VercelWeb[Next.js deployment]
     VercelAPI[Python function]
-    Fixtures[(Packaged sanitized fixtures)]
+    Neon[(Neon PostgreSQL + pgvector)]
     VercelWeb -->|same-origin /v1| VercelAPI
-    VercelAPI --> Fixtures
+    VercelAPI -->|pooled runtime URL| Neon
   end
-
-  FutureDB[(Managed PostgreSQL + pgvector)]
-  VercelAPI -. after DATABASE_URL, migration, and seed .-> FutureDB
+  VercelBuild[Vercel build] -->|unpooled migration URL| Neon
 ```
 
-Production does not currently use the local Docker database and cannot connect to `localhost` on
-the developer machine. Activating PostgreSQL in production requires a managed database reachable
-from Vercel, a production `DATABASE_URL`, migration execution, fixture seeding, and a successful
-health check.
+Preview deployments receive isolated Neon branches. Their Alembic migrations run before the
+application build, allowing schema and application changes to be tested together without altering
+production. Production follows the same migration gate against its stable Neon branch.

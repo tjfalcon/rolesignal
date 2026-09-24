@@ -20,7 +20,9 @@ DATA_DIR = Path(__file__).parent / "data"
 
 
 def load_fixture_corpus(profile_id: str) -> list[CandidateEvidence]:
-    filename = "demo_thomas.json" if profile_id == "demo-thomas" else "synthetic.json"
+    filename = {"demo-thomas": "demo_thomas.json", "synthetic": "synthetic.json"}.get(profile_id)
+    if filename is None:
+        return []
     raw = json.loads((DATA_DIR / filename).read_text())
     return [CandidateEvidence.model_validate(item) for item in raw]
 

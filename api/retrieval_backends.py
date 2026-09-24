@@ -5,7 +5,7 @@ from sqlalchemy import Engine, Select, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from api.database import create_database_engine, create_session_factory, database_url, session_scope
-from api.db_models import EvidenceRecord
+from api.db_models import CandidateProfileRecord, EvidenceRecord
 from api.models import CandidateEvidence
 from api.retrieval import (
     RankedEvidence,
@@ -67,9 +67,14 @@ class PostgresRetrievalBackend:
     def load_corpus(self, profile_id: str) -> list[CandidateEvidence]:
         statement = (
             select(EvidenceRecord)
+            .join(
+                CandidateProfileRecord,
+                CandidateProfileRecord.active_resume_version_id == EvidenceRecord.resume_version_id,
+            )
             .where(
                 EvidenceRecord.profile_id == profile_id,
                 EvidenceRecord.visibility == "public",
+                EvidenceRecord.approved.is_(True),
             )
             .order_by(EvidenceRecord.id)
         )
@@ -87,21 +92,24 @@ class PostgresRetrievalBackend:
             limit=limit,
         )
 
-    def _lexical_ranking(
-        self, query: str, profile_id: str, limit: int
-    ) -> list[CandidateEvidence]:
+    def _lexical_ranking(self, query: str, profile_id: str, limit: int) -> list[CandidateEvidence]:
         statement = text(
             """
-            SELECT id, profile_id, claim, skill_tags, skill_text, source,
-                   source_locator, visibility, embedding, created_at, updated_at
-            FROM candidate_evidence
-            WHERE profile_id = :profile_id
-              AND visibility = 'public'
-              AND search_vector @@ websearch_to_tsquery('english', :query)
+            SELECT evidence.id, evidence.profile_id, evidence.claim, evidence.skill_tags,
+                   evidence.skill_text, evidence.source, evidence.source_locator,
+                   evidence.visibility, evidence.embedding, evidence.created_at,
+                   evidence.updated_at
+            FROM candidate_evidence AS evidence
+            JOIN candidate_profiles AS profile
+              ON profile.active_resume_version_id = evidence.resume_version_id
+            WHERE evidence.profile_id = :profile_id
+              AND evidence.visibility = 'public'
+              AND evidence.approved = true
+              AND evidence.search_vector @@ websearch_to_tsquery('english', :query)
             ORDER BY ts_rank_cd(
-                search_vector,
+                evidence.search_vector,
                 websearch_to_tsquery('english', :query)
-            ) DESC, id
+            ) DESC, evidence.id
             LIMIT :limit
             """
         )
@@ -122,16 +130,19 @@ class PostgresRetrievalBackend:
                 for row in rows
             ]
 
-    def _semantic_ranking(
-        self, query: str, profile_id: str, limit: int
-    ) -> list[CandidateEvidence]:
+    def _semantic_ranking(self, query: str, profile_id: str, limit: int) -> list[CandidateEvidence]:
         query_vector = local_embedding(query)
         distance = EvidenceRecord.embedding.cosine_distance(query_vector)
         statement: Select[tuple[EvidenceRecord]] = (
             select(EvidenceRecord)
+            .join(
+                CandidateProfileRecord,
+                CandidateProfileRecord.active_resume_version_id == EvidenceRecord.resume_version_id,
+            )
             .where(
                 EvidenceRecord.profile_id == profile_id,
                 EvidenceRecord.visibility == "public",
+                EvidenceRecord.approved.is_(True),
             )
             .order_by(distance, EvidenceRecord.id)
             .limit(limit)
@@ -157,18 +168,14 @@ class FallbackRetrievalBackend:
 
     def load_corpus(self, profile_id: str) -> list[CandidateEvidence]:
         try:
-            corpus = self.primary.load_corpus(profile_id)
-            if corpus:
-                return corpus
+            return self.primary.load_corpus(profile_id)
         except Exception as error:
             logger.warning("postgres corpus unavailable; using fixture fallback: %s", error)
         return self.fallback.load_corpus(profile_id)
 
     def search(self, query: str, profile_id: str, limit: int = 3) -> list[RankedEvidence]:
         try:
-            ranked = self.primary.search(query, profile_id, limit)
-            if ranked:
-                return ranked
+            return self.primary.search(query, profile_id, limit)
         except Exception as error:
             logger.warning("postgres retrieval unavailable; using local fallback: %s", error)
         return self.fallback.search(query, profile_id, limit)
