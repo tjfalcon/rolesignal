@@ -25,6 +25,34 @@ class AssessmentStatus(StrEnum):
     UNKNOWN = "unknown"
 
 
+class JobSectionType(StrEnum):
+    COMPANY_DESCRIPTION = "company_description"
+    POSITION_SUMMARY = "position_summary"
+    RESPONSIBILITIES = "responsibilities"
+    QUALIFICATIONS = "qualifications"
+    WORK_AUTHORIZATION = "work_authorization"
+    LOCATION_AND_SCHEDULE = "location_and_schedule"
+    COMPENSATION = "compensation"
+    BENEFITS = "benefits"
+    LEGAL = "legal"
+    UNKNOWN = "unknown"
+
+
+class RequirementType(StrEnum):
+    TECHNICAL = "technical"
+    EXPERIENCE = "experience"
+    LEADERSHIP = "leadership"
+    EDUCATION = "education"
+    LANGUAGE = "language"
+    WORK_AUTHORIZATION = "work_authorization"
+    LOCATION = "location"
+    SCHEDULE = "schedule"
+    COMPENSATION = "compensation"
+    RESPONSIBILITY = "responsibility"
+    DOMAIN = "domain"
+    GENERAL = "general"
+
+
 class CandidateEvidence(BaseModel):
     model_config = ConfigDict(extra="forbid")
     id: str
@@ -35,6 +63,15 @@ class CandidateEvidence(BaseModel):
     visibility: str = "public"
 
 
+class JobSection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    heading: str
+    section_type: JobSectionType
+    source_position: int = Field(ge=0)
+    text: str
+
+
 class JobRequirement(BaseModel):
     model_config = ConfigDict(extra="forbid")
     id: str
@@ -42,6 +79,10 @@ class JobRequirement(BaseModel):
     category: RequirementCategory
     importance: Importance
     normalized_skills: list[str]
+    requirement_type: RequirementType = RequirementType.GENERAL
+    section_id: str = "section-01"
+    source_heading: str = "Unlabeled posting content"
+    source_position: int = Field(default=0, ge=0)
 
 
 class EvidenceMatch(BaseModel):
@@ -73,6 +114,7 @@ class AnalyzeRequest(BaseModel):
 
 class FitAnalysis(BaseModel):
     analysis_id: str
+    sections: list[JobSection]
     requirements: list[JobRequirement]
     assessments: list[RequirementAssessment]
     primary_strengths: list[str]

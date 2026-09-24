@@ -1,55 +1,22 @@
 import json
-import re
 import time
 import uuid
 from pathlib import Path
 
+from api.job_parser import extract_requirements as parse_job_requirements
 from api.models import (
     AnalysisMetrics,
     AssessmentStatus,
     CandidateEvidence,
     FitAnalysis,
-    Importance,
     JobRequirement,
     RequirementAssessment,
-    RequirementCategory,
+    RequirementType,
 )
 from api.retrieval import lexical_score, to_match
 from api.retrieval_backends import LocalRetrievalBackend, RetrievalBackend
 
 DATA_DIR = Path(__file__).parent / "data"
-SKILLS = [
-    "python",
-    "fastapi",
-    "typescript",
-    "javascript",
-    "react",
-    "next.js",
-    "node.js",
-    "api",
-    "sql",
-    "postgresql",
-    "rag",
-    "retrieval",
-    "embeddings",
-    "vector search",
-    "llm",
-    "agent",
-    "observability",
-    "testing",
-    "pytest",
-    "playwright",
-    "ci/cd",
-    "github actions",
-    "vercel",
-    "aws",
-    "azure",
-    "docker",
-    "kubernetes",
-    "technical leadership",
-    "stakeholder management",
-    "machine learning",
-]
 
 
 def load_fixture_corpus(profile_id: str) -> list[CandidateEvidence]:
@@ -63,65 +30,8 @@ def load_corpus(profile_id: str) -> list[CandidateEvidence]:
     return load_fixture_corpus(profile_id)
 
 
-def classify(text: str) -> RequirementCategory:
-    lowered = text.lower()
-    if any(word in lowered for word in ("salary", "compensation", "$", "pay range")):
-        return RequirementCategory.COMPENSATION
-    if any(word in lowered for word in ("remote", "hybrid", "location", "travel", "based in")):
-        return RequirementCategory.LOCATION
-    if any(word in lowered for word in ("preferred", "bonus", "nice to have", "ideally")):
-        return RequirementCategory.PREFERRED
-    if any(
-        word in lowered for word in ("must", "required", "years of", "proficiency", "expertise")
-    ):
-        return RequirementCategory.REQUIRED
-    if any(word in lowered for word in ("industry", "healthcare", "fintech", "retail", "domain")):
-        return RequirementCategory.DOMAIN
-    return RequirementCategory.RESPONSIBILITY
-
-
-def normalize_skills(text: str) -> list[str]:
-    lowered = text.lower().replace("nextjs", "next.js").replace("nodejs", "node.js")
-    aliases = {
-        "retrieval-augmented generation": "rag",
-        "large language model": "llm",
-        "apis": "api",
-    }
-    for source, target in aliases.items():
-        lowered = lowered.replace(source, target)
-    return [skill for skill in SKILLS if skill in lowered]
-
-
 def extract_requirements(job_text: str) -> list[JobRequirement]:
-    lines = [re.sub(r"^[\s•*\-–—\d.)]+", "", line).strip() for line in job_text.splitlines()]
-    candidates = [line for line in lines if 18 <= len(line) <= 500]
-    if len(candidates) < 3:
-        candidates = [
-            part.strip() for part in re.split(r"(?<=[.!?])\s+", job_text) if len(part.strip()) >= 18
-        ]
-    unique: list[str] = []
-    seen: set[str] = set()
-    for item in candidates:
-        key = item.lower()
-        if key not in seen:
-            seen.add(key)
-            unique.append(item)
-    requirements: list[JobRequirement] = []
-    for index, text in enumerate(unique[:18], start=1):
-        category = classify(text)
-        high = category == RequirementCategory.REQUIRED or bool(
-            re.search(r"\b[5-9]\+? years\b", text.lower())
-        )
-        requirements.append(
-            JobRequirement(
-                id=f"req-{index:02d}",
-                text=text,
-                category=category,
-                importance=Importance.HIGH if high else Importance.MEDIUM,
-                normalized_skills=normalize_skills(text),
-            )
-        )
-    return requirements
+    return parse_job_requirements(job_text)[1]
 
 
 def assess(
@@ -130,7 +40,14 @@ def assess(
     backend: RetrievalBackend,
     profile_id: str,
 ) -> RequirementAssessment:
-    if requirement.category in {RequirementCategory.COMPENSATION, RequirementCategory.LOCATION}:
+    if requirement.requirement_type in {
+        RequirementType.COMPENSATION,
+        RequirementType.EDUCATION,
+        RequirementType.LANGUAGE,
+        RequirementType.LOCATION,
+        RequirementType.SCHEDULE,
+        RequirementType.WORK_AUTHORIZATION,
+    }:
         return RequirementAssessment(
             requirement_id=requirement.id,
             status=AssessmentStatus.UNKNOWN,
@@ -189,7 +106,7 @@ def analyze_job(
     started = time.perf_counter()
     active_backend = backend or LocalRetrievalBackend()
     corpus = active_backend.load_corpus(profile_id)
-    requirements = extract_requirements(job_text)
+    sections, requirements = parse_job_requirements(job_text)
     assessments = [
         assess(requirement, corpus, active_backend, profile_id) for requirement in requirements
     ]
@@ -217,6 +134,7 @@ def analyze_job(
     latency = round((time.perf_counter() - started) * 1000)
     return FitAnalysis(
         analysis_id=str(uuid.uuid4()),
+        sections=sections,
         requirements=requirements,
         assessments=assessments,
         primary_strengths=strengths,

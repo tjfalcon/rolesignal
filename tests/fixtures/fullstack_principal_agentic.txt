@@ -1,0 +1,38 @@
+**About FullStack**
+
+FullStack is your AI-native engineering partner, built to turn AI capability into certainty. We serve over 600 customers in North America.
+
+We're most proud of:
+
+- Offering life-changing career opportunities to talented software professionals across the Americas.
+- Our client Net Promoter Score of 68, twice the industry average.
+
+**The Position**
+
+We're looking to hire a Principal Agentic Engineer for a high-impact, client-facing role that defines how global enterprises adopt agentic workflows.
+
+**What We're Looking for**
+
+- 8-10+ years of professional software development experience with a deep understanding of full-stack architectures such as Java, Python, C#, React, and Node.
+- Advanced English is required.
+- Successful completion of a four-year college degree is required.
+- Proven experience as a Solution Architect or Principal Engineer defining roadmaps for agentic solutions.
+- Deep fluency in Agentic Tooling like Claude Code, Cursor, Codex, or GitHub Copilot.
+- Ability to engage with CTOs and VPs of Engineering to defend architectural decisions and measure developer productivity.
+- Experience designing processes where AI systems generate implementation code with rigorous human-in-the-loop validation.
+- Experience working on Agile and Scrum teams.
+- Ability to consistently work 40 hours per week.
+
+**Work Authorization Requirements**
+
+- Applicants must be currently authorized to work in the United States on a full-time basis.
+- FullStack will not sponsor applicants for work visas now or in the future.
+
+**What We Offer**
+
+- Competitive Salary.
+- Paid Time Off and holidays.
+- 100% remote work.
+- Health, dental, and vision insurance.
+
+FullStack is proud to be an equal opportunity workplace regardless of race, religion, sex, national origin, disability, or gender identity.

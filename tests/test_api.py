@@ -56,6 +56,11 @@ def test_analyze_returns_citations_for_every_positive_assessment() -> None:
 
     assert response.status_code == 200
     payload = response.json()
+    assert payload["sections"]
+    assert all(
+        item["section_id"] and item["source_heading"] and item["requirement_type"]
+        for item in payload["requirements"]
+    )
     evidence_ids = {item["id"] for item in payload["evidence"]}
     positives = [
         item for item in payload["assessments"] if item["status"] in {"supported", "adjacent"}

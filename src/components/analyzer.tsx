@@ -16,6 +16,18 @@ interface Requirement {
   text: string;
   category: string;
   importance: string;
+  requirement_type: string;
+  section_id: string;
+  source_heading: string;
+  source_position: number;
+}
+
+interface JobSection {
+  id: string;
+  heading: string;
+  section_type: string;
+  source_position: number;
+  text: string;
 }
 
 interface Assessment {
@@ -28,6 +40,7 @@ interface Assessment {
 
 interface FitAnalysis {
   analysis_id: string;
+  sections: JobSection[];
   requirements: Requirement[];
   assessments: Assessment[];
   primary_strengths: string[];
@@ -133,6 +146,16 @@ export default function Analyzer() {
               <span>supported or adjacent evidence coverage</span>
               <div className="bar"><i style={{ width: `${analysis.metrics.evidence_coverage * 100}%` }} /></div>
             </div>
+            <details className="sectionSummary">
+              <summary>{analysis.sections.length} source sections detected</summary>
+              <ul>
+                {analysis.sections.map((section) => (
+                  <li key={section.id}>
+                    <strong>{section.heading}</strong> — {section.section_type.replaceAll("_", " ")}
+                  </li>
+                ))}
+              </ul>
+            </details>
             <div className="requirementList">
               {analysis.requirements.map((requirement) => {
                 const assessment = assessments.get(requirement.id);
@@ -141,9 +164,14 @@ export default function Analyzer() {
                   <article key={requirement.id} className={`requirement ${assessment.status}`}>
                     <div className="requirementMeta">
                       <span className="status">{assessment.status}</span>
-                      <span>{requirement.category} · {Math.round(assessment.confidence * 100)}% confidence</span>
+                      <span>
+                        {requirement.category} · {requirement.requirement_type.replaceAll("_", " ")} · {Math.round(assessment.confidence * 100)}% confidence
+                      </span>
                     </div>
                     <h3>{requirement.text}</h3>
+                    <small className="provenance">
+                      {requirement.source_heading} · item {requirement.source_position}
+                    </small>
                     <p>{assessment.explanation}</p>
                     {assessment.evidence_ids.map((id) => {
                       const item = evidence.get(id);
