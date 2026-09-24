@@ -7,7 +7,7 @@
     "dev:web": "next dev",
     "dev:api": ".venv/bin/python -m uvicorn api.main:app --reload --port 8000 --env-file .env.local",
     "build": "next build",
-    "vercel-build": "uv run --with-requirements requirements.txt python -m scripts.migrate_deployment && next build",
+    "vercel-build": "uv run --python 3.12 --with-requirements requirements.txt python -m scripts.migrate_deployment && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit"
   },
