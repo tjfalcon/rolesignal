@@ -118,10 +118,10 @@ npm run dev
 `npm run dev` starts both Next.js and FastAPI. Open the Next.js URL printed in the terminal; it
 uses port 3000 when available and typically 3001 when the portfolio is already using 3000. The
 API defaults to `http://localhost:8000`; set `NEXT_PUBLIC_API_URL` for another API origin.
-Production uses the same-origin `/v1` contract, which rewrites to the Vercel
-Python function under `/api/v1`. Vercel dispatches the entire `/api/*` route tree to the single
-FastAPI entrypoint at `api/index.py`; do not add per-route Python entrypoints beneath `api/`, because
-they take precedence over the FastAPI application and can leave nested routes unreachable.
+Production uses the same-origin `/v1` contract. `vercel.json` sends that complete route tree to the
+single FastAPI function at `api/index.py`, while FastAPI continues to evaluate the original request
+path. Do not add per-route Python entrypoints beneath `api/`; their filesystem routes can take
+precedence and leave nested FastAPI routes unreachable.
 
 ## Verify
 
