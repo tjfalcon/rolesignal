@@ -18,6 +18,28 @@ Assessments reference stable evidence IDs. The API returns the cited evidence ob
 
 Lexical and vector signals have different score distributions. Reciprocal-rank fusion combines their ordered results without pretending those raw scores are directly comparable. A test failure exposed an early mistake: normalized RRF position was treated as relevance, which mislabeled unrelated GPU-research requirements as adjacent. The assessment policy now requires an actual normalized-skill overlap for the adjacent state.
 
+## Use PostgreSQL as the evidence system of record
+
+Evidence claims participate in durable relationships with profiles, source locators, future
+resume versions, requirements, and assessments. PostgreSQL provides transactional integrity and
+auditable identifiers for those relationships while JSONB preserves variable parser metadata.
+Its full-text index and pgvector extension allow lexical and semantic retrieval to share the same
+ownership and visibility filters.
+
+Tradeoff: a database adds migrations, seeding, availability, and deployment work. RoleSignal
+therefore keeps the deterministic fixture backend instead of requiring PostgreSQL for every demo.
+
+## Make database activation configuration-driven and visible
+
+`DATABASE_URL` selects the PostgreSQL backend. If it is absent, RoleSignal selects the local
+fixture backend. If it is configured but a query fails, the wrapper logs the failure and uses the
+deterministic fallback. `/v1/health` exposes the selected mode and database readiness so a fallback
+cannot be mistaken for successful database retrieval.
+
+The Vercel deployment currently has no `DATABASE_URL`; production therefore uses packaged
+fixtures. A managed PostgreSQL instance, migrations, and seeding are prerequisites for changing
+that behavior.
+
 ## Store no public résumé uploads in v1
 
 The web contract accepts a preloaded profile ID, not arbitrary candidate content. This keeps the first public deployment honest and reduces privacy surface while retention, deletion, authorization, and abuse controls are unfinished.

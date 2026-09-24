@@ -1,6 +1,6 @@
 # RoleSignal
 
-RoleSignal evaluates a job description against a citation-backed candidate evidence corpus. It distinguishes what is **supported**, **adjacent**, **missing**, or **unknown**, cites every positive conclusion, and refuses to turn a gap into a résumé claim.
+RoleSignal evaluates a job description against a citation-backed candidate evidence corpus. It distinguishes what is **supported**, **adjacent**, **missing**, or **unknown**, cites every positive conclusion, and refuses to turn a gap into a resume claim.
 
 This repository is a public applied-AI engineering case study by Thomas Falcon. It combines a Next.js/TypeScript interface with a typed Python/FastAPI service, hybrid retrieval, structured contracts, automated evaluation, failure-aware UI, and provider adapters.
 
@@ -10,7 +10,8 @@ This repository is a public applied-AI engineering case study by Thomas Falcon. 
 
 - Paste a job description and analyze a preloaded sanitized Thomas profile.
 - Extract and classify requirements as required, preferred, responsibility, domain, compensation, or location.
-- Retrieve candidate evidence with local lexical/vector ranks combined through reciprocal-rank fusion.
+- Retrieve candidate evidence through a configurable backend: PostgreSQL full-text search plus
+  pgvector locally, or deterministic fixture retrieval when no database is configured.
 - Render exact claim and source-locator citations for supported or adjacent assessments.
 - Treat compensation and location as human-confirmation items.
 - Return missing requirements without fabricated evidence.
@@ -26,29 +27,54 @@ The default is a **deterministic, zero-cost demo**. It does not call OpenAI and 
 |---|---:|
 | Golden retrieval cases | 30 |
 | Recall@5 | 100% (30/30) |
-| Automated tests | 8 passing |
-| Python coverage | 90% |
+| Automated tests | 15 passing with PostgreSQL enabled |
+| Python coverage | 89% with PostgreSQL integration tests |
 | Known fabricated candidate claims in tests | 0 |
 | Hosted model calls in default demo | 0 |
 
-This small, deliberately clear fixture set is a baseline—not a general-quality claim. Week 2 expands it with hard negatives, conflicting evidence, irrelevant retrieval, and paraphrase stress cases, then migrates retrieval to PostgreSQL full-text search plus pgvector.
+This small, deliberately clear fixture set is a baseline—not a general-quality claim. PostgreSQL
+full-text search and pgvector retrieval are implemented and integration-tested. The remaining
+Week 2 work expands the evaluation set with hard negatives, conflicting evidence, irrelevant
+retrieval, and paraphrase stress cases.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
   Browser[Next.js user interface] --> API[FastAPI /v1/analyze]
-  API --> Extract[Requirement extraction]
-  Extract --> Retrieve[Lexical + local vector ranks]
-  Retrieve --> Fuse[Reciprocal-rank fusion]
+  API --> Extract[Deterministic requirement extraction]
+  Extract --> Select{DATABASE_URL configured?}
+  Select -->|Yes| PG[(PostgreSQL)]
+  PG --> FTS[Full-text ranking]
+  PG --> Vector[pgvector ranking]
+  FTS --> Fuse[Reciprocal-rank fusion]
+  Vector --> Fuse
+  Select -->|No or unavailable| Fixture[Sanitized fixture corpus]
+  Fixture --> Local[Local lexical + hashed-vector ranking]
+  Local --> Fuse
   Fuse --> Assess[Grounded assessment policy]
   Assess --> Contract[Pydantic FitAnalysis]
   Contract --> Browser
-  Evidence[(Sanitized evidence corpus)] --> Retrieve
-  Provider[Optional model/embedding adapter] -. disabled in baseline .-> Extract
 ```
 
-The current slice uses in-memory analysis retention and repository fixtures so behavior is inspectable. The next persistence slice replaces these with PostgreSQL/pgvector, database migrations, source-locator metadata, and transient public submissions. The browser accepts only a preloaded profile ID; there is no public résumé upload endpoint in v1.
+Candidate evidence, skill tags, source locators, and deterministic test embeddings can be stored
+in PostgreSQL. Job submissions and completed analyses remain transient: the API keeps only a
+bounded in-process analysis cache. The browser accepts a preloaded profile ID; there is no public
+resume-upload endpoint in v1. See [the full runtime and data-flow diagrams](docs/ARCHITECTURE.md).
+
+### Deployment modes
+
+| Environment | Retrieval backend | Current behavior |
+|---|---|---|
+| Local with `DATABASE_URL` | PostgreSQL FTS + pgvector + RRF | Active and integration-tested |
+| Local without `DATABASE_URL` | Repository fixtures + local hashed vectors | Deterministic fallback |
+| Vercel production today | Repository fixtures + local hashed vectors | No `DATABASE_URL` is configured |
+| Vercel after managed database provisioning | PostgreSQL FTS + pgvector + RRF | Planned; requires migration and seed during deployment |
+
+The deployed application therefore does **not** currently query PostgreSQL. Vercel packages the
+sanitized JSON fixtures with the FastAPI function, and the backend factory selects the local
+deterministic implementation because `DATABASE_URL` is absent. This is deliberate: merging the
+database code did not silently change the public demo's storage or availability behavior.
 
 ## API contracts
 
@@ -67,25 +93,18 @@ Requires Node.js 22+ and Python 3.12+.
 npm ci
 python3 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
-.venv/bin/uvicorn api.main:app --reload --port 8000
-```
-
-In a second terminal:
-
-```bash
+docker compose up -d postgres
+export DATABASE_URL="postgresql+psycopg://rolesignal:rolesignal-local@localhost:5432/rolesignal"
+.venv/bin/alembic upgrade head
+.venv/bin/python -m scripts.seed_evidence
 npm run dev
 ```
 
-Open `http://localhost:3000`. In development, the web app defaults to
-`http://localhost:8000`; set `NEXT_PUBLIC_API_URL` for another API origin.
+`npm run dev` starts both Next.js and FastAPI. Open the Next.js URL printed in the terminal; it
+uses port 3000 when available and typically 3001 when the portfolio is already using 3000. The
+API defaults to `http://localhost:8000`; set `NEXT_PUBLIC_API_URL` for another API origin.
 Production uses the same-origin `/v1` contract, which rewrites to the Vercel
 Python function under `/api/v1`.
-
-PostgreSQL with pgvector is available for the Week 2 storage slice:
-
-```bash
-docker compose up -d postgres
-```
 
 ## Verify
 
@@ -114,7 +133,8 @@ Do not add employer source code, private documents, private résumé data, or cl
 ## Delivery roadmap
 
 - **Week 1:** end-to-end deterministic RAG-shaped slice, typed API, public evidence profile, responsive result UI, CI baseline.
-- **Week 2:** PostgreSQL/pgvector, full-text search, real embeddings, metadata-aware chunks, 50+ difficult evaluation cases, retrieval and grounding report.
+- **Week 2:** PostgreSQL/pgvector and full-text retrieval shipped; next add real embeddings,
+  metadata-aware chunks, 50+ difficult evaluation cases, and a retrieval/grounding report.
 - **Week 3:** structured logs, correlation IDs, provider timeouts/retries, rate limits, prompt-injection cases, cached demo analyses, browser tests.
 - **Week 4:** deployed case study, architecture/data-flow/threat-model diagrams, accessibility and performance audit, demo video.
 
