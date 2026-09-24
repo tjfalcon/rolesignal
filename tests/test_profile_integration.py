@@ -3,11 +3,17 @@ import os
 import pytest
 from sqlalchemy import func, select
 
+from api.analyzer import analyze_job
 from api.database import create_database_engine, create_session_factory, session_scope
 from api.db_models import CandidateProfileRecord, ResumeVersionRecord
 from api.models import EvidenceCreate, EvidenceUpdate, ResumeVersionCreate
 from api.profile_service import ActiveVersionMutationError, ProfileService
-from api.retrieval_backends import PostgresRetrievalBackend
+from api.retrieval import RankedEvidence
+from api.retrieval_backends import (
+    FallbackRetrievalBackend,
+    LocalRetrievalBackend,
+    PostgresRetrievalBackend,
+)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="DATABASE_URL is not configured")
@@ -85,3 +91,27 @@ def test_create_edit_activate_version_changes_active_retrieval() -> None:
             profile.active_resume_version_id = previous.id
             session.flush()
             session.delete(created)
+
+
+def test_analysis_pins_database_version_and_fails_closed_mid_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, retrieval = services()
+    prepared = FallbackRetrievalBackend(retrieval, LocalRetrievalBackend()).prepare("demo-thomas")
+
+    def unavailable(
+        query: str, profile_id: str, version_id: str, limit: int = 3
+    ) -> list[RankedEvidence]:
+        raise RuntimeError("simulated transient failure")
+
+    monkeypatch.setattr(retrieval, "search_version", unavailable)
+    analysis = analyze_job(
+        "Senior engineer role.\n"
+        "Required: Build TypeScript and React applications across complex systems.\n"
+        "Lead cross-functional delivery and mentor other engineers.",
+        "demo-thomas",
+        backend=prepared,
+    )
+
+    assert analysis.evidence
+    assert all(not assessment.evidence_ids for assessment in analysis.assessments)

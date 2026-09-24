@@ -65,14 +65,22 @@ class PostgresRetrievalBackend:
         self.session_factory = session_factory or create_session_factory(engine)
 
     def load_corpus(self, profile_id: str) -> list[CandidateEvidence]:
+        version_id = self.active_version_id(profile_id)
+        return self.load_version_corpus(profile_id, version_id) if version_id else []
+
+    def active_version_id(self, profile_id: str) -> str | None:
+        statement = select(CandidateProfileRecord.active_resume_version_id).where(
+            CandidateProfileRecord.id == profile_id
+        )
+        with session_scope(self.session_factory) as session:
+            return session.scalar(statement)
+
+    def load_version_corpus(self, profile_id: str, version_id: str) -> list[CandidateEvidence]:
         statement = (
             select(EvidenceRecord)
-            .join(
-                CandidateProfileRecord,
-                CandidateProfileRecord.active_resume_version_id == EvidenceRecord.resume_version_id,
-            )
             .where(
                 EvidenceRecord.profile_id == profile_id,
+                EvidenceRecord.resume_version_id == version_id,
                 EvidenceRecord.visibility == "public",
                 EvidenceRecord.approved.is_(True),
             )
@@ -83,16 +91,24 @@ class PostgresRetrievalBackend:
         return [record_to_evidence(record) for record in records]
 
     def search(self, query: str, profile_id: str, limit: int = 3) -> list[RankedEvidence]:
+        version_id = self.active_version_id(profile_id)
+        return self.search_version(query, profile_id, version_id, limit) if version_id else []
+
+    def search_version(
+        self, query: str, profile_id: str, version_id: str, limit: int = 3
+    ) -> list[RankedEvidence]:
         candidate_limit = max(limit * 4, 12)
-        lexical = self._lexical_ranking(query, profile_id, candidate_limit)
-        semantic = self._semantic_ranking(query, profile_id, candidate_limit)
+        lexical = self._lexical_ranking(query, profile_id, version_id, candidate_limit)
+        semantic = self._semantic_ranking(query, profile_id, version_id, candidate_limit)
         return reciprocal_rank_fusion(
             [lexical, semantic],
             method="postgres-fts-pgvector-rrf",
             limit=limit,
         )
 
-    def _lexical_ranking(self, query: str, profile_id: str, limit: int) -> list[CandidateEvidence]:
+    def _lexical_ranking(
+        self, query: str, profile_id: str, version_id: str, limit: int
+    ) -> list[CandidateEvidence]:
         statement = text(
             """
             SELECT evidence.id, evidence.profile_id, evidence.claim, evidence.skill_tags,
@@ -100,9 +116,8 @@ class PostgresRetrievalBackend:
                    evidence.visibility, evidence.embedding, evidence.created_at,
                    evidence.updated_at
             FROM candidate_evidence AS evidence
-            JOIN candidate_profiles AS profile
-              ON profile.active_resume_version_id = evidence.resume_version_id
             WHERE evidence.profile_id = :profile_id
+              AND evidence.resume_version_id = :version_id
               AND evidence.visibility = 'public'
               AND evidence.approved = true
               AND evidence.search_vector @@ websearch_to_tsquery('english', :query)
@@ -116,7 +131,12 @@ class PostgresRetrievalBackend:
         with session_scope(self.session_factory) as session:
             rows = session.execute(
                 statement,
-                {"profile_id": profile_id, "query": query, "limit": limit},
+                {
+                    "profile_id": profile_id,
+                    "version_id": version_id,
+                    "query": query,
+                    "limit": limit,
+                },
             ).mappings()
             return [
                 CandidateEvidence(
@@ -130,17 +150,16 @@ class PostgresRetrievalBackend:
                 for row in rows
             ]
 
-    def _semantic_ranking(self, query: str, profile_id: str, limit: int) -> list[CandidateEvidence]:
+    def _semantic_ranking(
+        self, query: str, profile_id: str, version_id: str, limit: int
+    ) -> list[CandidateEvidence]:
         query_vector = local_embedding(query)
         distance = EvidenceRecord.embedding.cosine_distance(query_vector)
         statement: Select[tuple[EvidenceRecord]] = (
             select(EvidenceRecord)
-            .join(
-                CandidateProfileRecord,
-                CandidateProfileRecord.active_resume_version_id == EvidenceRecord.resume_version_id,
-            )
             .where(
                 EvidenceRecord.profile_id == profile_id,
+                EvidenceRecord.resume_version_id == version_id,
                 EvidenceRecord.visibility == "public",
                 EvidenceRecord.approved.is_(True),
             )
@@ -183,6 +202,49 @@ class FallbackRetrievalBackend:
     def database_status(self) -> str:
         status = self.primary.database_status()
         return status if status == "postgres-ready" else "postgres-unavailable-local-fallback"
+
+    def prepare(self, profile_id: str) -> RetrievalBackend:
+        """Pin one evidence source and resume version for an entire analysis."""
+        try:
+            version_id = self.primary.active_version_id(profile_id)
+            if version_id is None:
+                return PreparedPostgresRetrievalBackend(self.primary, profile_id, "", [])
+            corpus = self.primary.load_version_corpus(profile_id, version_id)
+            return PreparedPostgresRetrievalBackend(self.primary, profile_id, version_id, corpus)
+        except Exception as error:
+            logger.warning("postgres analysis unavailable; selecting fixture fallback: %s", error)
+            return self.fallback
+
+
+class PreparedPostgresRetrievalBackend:
+    mode = "postgres-hybrid"
+
+    def __init__(
+        self,
+        primary: PostgresRetrievalBackend,
+        profile_id: str,
+        version_id: str,
+        corpus: list[CandidateEvidence],
+    ) -> None:
+        self.primary = primary
+        self.profile_id = profile_id
+        self.version_id = version_id
+        self.corpus = corpus
+
+    def load_corpus(self, profile_id: str) -> list[CandidateEvidence]:
+        return self.corpus if profile_id == self.profile_id else []
+
+    def search(self, query: str, profile_id: str, limit: int = 3) -> list[RankedEvidence]:
+        if profile_id != self.profile_id or not self.version_id:
+            return []
+        try:
+            return self.primary.search_version(query, profile_id, self.version_id, limit)
+        except Exception as error:
+            logger.warning("pinned postgres retrieval failed closed: %s", error)
+            return []
+
+    def database_status(self) -> str:
+        return self.primary.database_status()
 
 
 def create_retrieval_backend() -> RetrievalBackend:

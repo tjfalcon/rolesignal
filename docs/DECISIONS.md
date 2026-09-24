@@ -52,6 +52,11 @@ Vercel production and preview deployments now receive Neon connection variables.
 uses the pooled URL; Alembic uses the unpooled URL before the build. Preview deployments migrate
 isolated database branches. Health reporting still makes runtime fallback visible.
 
+Each analysis pins its evidence source and active résumé-version ID before extraction begins. If
+PostgreSQL is selected successfully but a later search fails, that search fails closed instead of
+switching to packaged fixtures mid-request. This prevents dangling citations and prevents removed
+or private evidence from reappearing during a transient database failure.
+
 ## Store no public résumé uploads in v1
 
 The web contract accepts a preloaded profile ID, not arbitrary candidate content. This keeps the first public deployment honest and reduces privacy surface while retention, deletion, authorization, and abuse controls are unfinished.

@@ -14,7 +14,11 @@ from api.models import (
     RequirementType,
 )
 from api.retrieval import lexical_score, to_match
-from api.retrieval_backends import LocalRetrievalBackend, RetrievalBackend
+from api.retrieval_backends import (
+    FallbackRetrievalBackend,
+    LocalRetrievalBackend,
+    RetrievalBackend,
+)
 
 DATA_DIR = Path(__file__).parent / "data"
 
@@ -107,6 +111,8 @@ def analyze_job(
 ) -> FitAnalysis:
     started = time.perf_counter()
     active_backend = backend or LocalRetrievalBackend()
+    if isinstance(active_backend, FallbackRetrievalBackend):
+        active_backend = active_backend.prepare(profile_id)
     corpus = active_backend.load_corpus(profile_id)
     sections, requirements = parse_job_requirements(job_text)
     assessments = [
