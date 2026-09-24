@@ -3,16 +3,12 @@ from fastapi.testclient import TestClient
 
 from api.index import app as vercel_app
 from api.main import RETRIEVAL_BACKEND, app
-from api.v1.analyze import app as vercel_analyze_app
-from api.v1.health import app as vercel_health_app
 
 client = TestClient(app)
 
 
 def test_vercel_entrypoint_exports_the_application() -> None:
     assert vercel_app is app
-    assert vercel_analyze_app is app
-    assert vercel_health_app is app
 
 
 def test_health_reports_truthful_demo_dependencies() -> None:
