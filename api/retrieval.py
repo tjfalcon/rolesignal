@@ -72,17 +72,37 @@ def hybrid_search(
         ),
         reverse=True,
     )
+    return reciprocal_rank_fusion(
+        [lexical, vector],
+        method="hybrid-local-rrf",
+        limit=limit,
+    )
+
+
+def reciprocal_rank_fusion(
+    rankings: list[list[CandidateEvidence]],
+    *,
+    method: str,
+    limit: int,
+    rank_constant: int = 60,
+) -> list[RankedEvidence]:
     scores: dict[str, float] = defaultdict(float)
-    for rank, item in enumerate(lexical, start=1):
-        scores[item.id] += 1 / (60 + rank)
-    for rank, item in enumerate(vector, start=1):
-        scores[item.id] += 1 / (60 + rank)
-    by_id = {item.id: item for item in corpus}
-    max_rrf = 2 / 61
-    ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)[:limit]
+    evidence_by_id: dict[str, CandidateEvidence] = {}
+    for ranking in rankings:
+        for rank, evidence in enumerate(ranking, start=1):
+            evidence_by_id[evidence.id] = evidence
+            scores[evidence.id] += 1 / (rank_constant + rank)
+    if not rankings:
+        return []
+    max_rrf = len(rankings) / (rank_constant + 1)
+    ranked = sorted(scores.items(), key=lambda item: (-item[1], item[0]))[:limit]
     return [
-        RankedEvidence(by_id[item_id], round(score / max_rrf, 4), "hybrid-local-rrf")
-        for item_id, score in ranked
+        RankedEvidence(
+            evidence=evidence_by_id[evidence_id],
+            score=round(score / max_rrf, 4),
+            method=method,
+        )
+        for evidence_id, score in ranked
     ]
 
 

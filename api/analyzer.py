@@ -14,7 +14,8 @@ from api.models import (
     RequirementAssessment,
     RequirementCategory,
 )
-from api.retrieval import hybrid_search, lexical_score, to_match
+from api.retrieval import lexical_score, to_match
+from api.retrieval_backends import LocalRetrievalBackend, RetrievalBackend
 
 DATA_DIR = Path(__file__).parent / "data"
 SKILLS = [
@@ -51,10 +52,15 @@ SKILLS = [
 ]
 
 
-def load_corpus(profile_id: str) -> list[CandidateEvidence]:
+def load_fixture_corpus(profile_id: str) -> list[CandidateEvidence]:
     filename = "demo_thomas.json" if profile_id == "demo-thomas" else "synthetic.json"
     raw = json.loads((DATA_DIR / filename).read_text())
     return [CandidateEvidence.model_validate(item) for item in raw]
+
+
+def load_corpus(profile_id: str) -> list[CandidateEvidence]:
+    """Compatibility helper for tests and offline evaluation."""
+    return load_fixture_corpus(profile_id)
 
 
 def classify(text: str) -> RequirementCategory:
@@ -118,7 +124,12 @@ def extract_requirements(job_text: str) -> list[JobRequirement]:
     return requirements
 
 
-def assess(requirement: JobRequirement, corpus: list[CandidateEvidence]) -> RequirementAssessment:
+def assess(
+    requirement: JobRequirement,
+    corpus: list[CandidateEvidence],
+    backend: RetrievalBackend,
+    profile_id: str,
+) -> RequirementAssessment:
     if requirement.category in {RequirementCategory.COMPENSATION, RequirementCategory.LOCATION}:
         return RequirementAssessment(
             requirement_id=requirement.id,
@@ -130,7 +141,7 @@ def assess(requirement: JobRequirement, corpus: list[CandidateEvidence]) -> Requ
             ),
             confidence=0.95,
         )
-    ranked = hybrid_search(requirement.text, corpus)
+    ranked = backend.search(requirement.text, profile_id)
     direct = [item for item in ranked if lexical_score(requirement.text, item.evidence) >= 0.24]
     requirement_skills = set(requirement.normalized_skills)
     direct_skill_matches = [
@@ -169,11 +180,19 @@ def assess(requirement: JobRequirement, corpus: list[CandidateEvidence]) -> Requ
     )
 
 
-def analyze_job(job_text: str, profile_id: str, mode: str = "deterministic") -> FitAnalysis:
+def analyze_job(
+    job_text: str,
+    profile_id: str,
+    mode: str | None = None,
+    backend: RetrievalBackend | None = None,
+) -> FitAnalysis:
     started = time.perf_counter()
-    corpus = load_corpus(profile_id)
+    active_backend = backend or LocalRetrievalBackend()
+    corpus = active_backend.load_corpus(profile_id)
     requirements = extract_requirements(job_text)
-    assessments = [assess(requirement, corpus) for requirement in requirements]
+    assessments = [
+        assess(requirement, corpus, active_backend, profile_id) for requirement in requirements
+    ]
     requirement_by_id = {item.id: item for item in requirements}
     strengths = [
         requirement_by_id[item.requirement_id].text
@@ -211,7 +230,7 @@ def analyze_job(job_text: str, profile_id: str, mode: str = "deterministic") -> 
         ],
         evidence=corpus,
         metrics=AnalysisMetrics(
-            mode=mode,
+            mode=mode or active_backend.mode,
             latency_ms=latency,
             estimated_cost_usd=0,
             evidence_coverage=round(covered / len(assessments), 3) if assessments else 0,
