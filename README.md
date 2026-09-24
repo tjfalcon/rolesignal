@@ -4,6 +4,8 @@ RoleSignal evaluates a job description against a citation-backed candidate evide
 
 This repository is a public applied-AI engineering case study by Thomas Falcon. It combines a Next.js/TypeScript interface with a typed Python/FastAPI service, hybrid retrieval, structured contracts, automated evaluation, failure-aware UI, and provider adapters.
 
+[Open the live demo](https://rolesignal-ten.vercel.app) · [Inspect the public project board](https://github.com/users/tjfalcon/projects/2)
+
 ## What works now
 
 - Paste a job description and analyze a preloaded sanitized Thomas profile.
