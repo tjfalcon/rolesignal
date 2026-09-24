@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
 from api.index import app as vercel_app
-from api.main import app
+from api.main import RETRIEVAL_BACKEND, app
 from api.v1.analyze import app as vercel_analyze_app
 from api.v1.health import app as vercel_health_app
 
@@ -18,8 +18,8 @@ def test_health_reports_truthful_demo_dependencies() -> None:
     response = client.get("/v1/health")
 
     assert response.status_code == 200
-    assert response.json()["mode"] == "deterministic"
-    assert response.json()["database"] == "in-memory-demo"
+    assert response.json()["mode"] == RETRIEVAL_BACKEND.mode
+    assert response.json()["database"] == RETRIEVAL_BACKEND.database_status()
 
 
 def test_vercel_prefixed_health_route_matches_public_contract() -> None:
