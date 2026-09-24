@@ -37,8 +37,8 @@ sequenceDiagram
 
   User->>Web: Paste job description
   Web->>API: POST /v1/analyze
-  API->>Extract: Extract explicit requirements
-  loop Each technical requirement
+  API->>Extract: Detect sections and extract typed requirements with provenance
+  loop Each assessable requirement
     Extract->>Retrieve: Search requirement and profile
     alt PostgreSQL configured and ready
       Retrieve->>DB: Full-text ranking

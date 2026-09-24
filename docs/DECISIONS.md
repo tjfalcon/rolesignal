@@ -14,6 +14,18 @@ The model adapter owns structured requirement extraction; the embedding adapter 
 
 Assessments reference stable evidence IDs. The API returns the cited evidence objects separately, and tests assert that every positive ID resolves. Missing and human-confirmation states return no candidate citation.
 
+## Separate document structure from requirement meaning
+
+Job postings mix company marketing, role summaries, qualifications, eligibility constraints,
+benefits, and legal text. RoleSignal first creates typed sections and only then extracts candidate
+requirements. Every requirement retains its source heading and position. Company and legal
+sections are excluded from fit scoring; benefit sections contribute only compensation, location,
+or schedule constraints.
+
+Education, language, work authorization, location, schedule, and compensation return `unknown`
+until candidate-specific structured data is available. Similar résumé wording is not sufficient
+to establish a current personal or legal constraint.
+
 ## Use reciprocal-rank fusion
 
 Lexical and vector signals have different score distributions. Reciprocal-rank fusion combines their ordered results without pretending those raw scores are directly comparable. A test failure exposed an early mistake: normalized RRF position was treated as relevance, which mislabeled unrelated GPU-research requirements as adjacent. The assessment policy now requires an actual normalized-skill overlap for the adjacent state.

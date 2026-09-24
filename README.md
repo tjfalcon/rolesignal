@@ -9,7 +9,11 @@ This repository is a public applied-AI engineering case study by Thomas Falcon. 
 ## What works now
 
 - Paste a job description and analyze a preloaded sanitized Thomas profile.
-- Extract and classify requirements as required, preferred, responsibility, domain, compensation, or location.
+- Detect company, position, qualification, authorization, benefit, legal, and other source sections.
+- Extract requirements with section provenance, information type, importance, and normalized skills.
+- Exclude company marketing, ordinary benefits, EEO language, and privacy boilerplate from fit scoring.
+- Route education, language, work authorization, schedule, compensation, and location constraints
+  to explicit human confirmation instead of résumé-similarity matching.
 - Retrieve candidate evidence through a configurable backend: PostgreSQL full-text search plus
   pgvector locally, or deterministic fixture retrieval when no database is configured.
 - Render exact claim and source-locator citations for supported or adjacent assessments.
@@ -27,8 +31,8 @@ The default is a **deterministic, zero-cost demo**. It does not call OpenAI and 
 |---|---:|
 | Golden retrieval cases | 30 |
 | Recall@5 | 100% (30/30) |
-| Automated tests | 15 passing with PostgreSQL enabled |
-| Python coverage | 89% with PostgreSQL integration tests |
+| Automated tests | 17 passing with PostgreSQL enabled |
+| Python coverage | 91% with PostgreSQL integration tests |
 | Known fabricated candidate claims in tests | 0 |
 | Hosted model calls in default demo | 0 |
 
@@ -42,7 +46,8 @@ retrieval, and paraphrase stress cases.
 ```mermaid
 flowchart LR
   Browser[Next.js user interface] --> API[FastAPI /v1/analyze]
-  API --> Extract[Deterministic requirement extraction]
+  API --> Sections[Section detection + provenance]
+  Sections --> Extract[Typed requirement extraction]
   Extract --> Select{DATABASE_URL configured?}
   Select -->|Yes| PG[(PostgreSQL)]
   PG --> FTS[Full-text ranking]
@@ -61,6 +66,8 @@ Candidate evidence, skill tags, source locators, and deterministic test embeddin
 in PostgreSQL. Job submissions and completed analyses remain transient: the API keeps only a
 bounded in-process analysis cache. The browser accepts a preloaded profile ID; there is no public
 resume-upload endpoint in v1. See [the full runtime and data-flow diagrams](docs/ARCHITECTURE.md).
+See [section-aware ingestion](docs/SECTION_INGESTION.md) for the classification and exclusion
+policy.
 
 ### Deployment modes
 
@@ -78,7 +85,8 @@ database code did not silently change the public demo's storage or availability 
 
 ## API contracts
 
-- `POST /v1/analyze` — accepts `job_text` and `candidate_profile_id`; returns requirements, assessments, evidence, limitations, and metrics.
+- `POST /v1/analyze` — accepts `job_text` and `candidate_profile_id`; returns detected sections,
+  provenance-backed requirements, assessments, evidence, limitations, and metrics.
 - `GET /v1/analyses/{analysis_id}` — returns an analysis still present in the bounded demo cache.
 - `GET /v1/health` — reports the real demo mode, storage state, and provider configuration.
 - Interactive OpenAPI docs are available at `/docs` while the API is running.
