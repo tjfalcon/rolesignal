@@ -74,7 +74,10 @@ In a second terminal:
 npm run dev
 ```
 
-Open `http://localhost:3000`. The web app defaults to `http://localhost:8000`; set `NEXT_PUBLIC_API_URL` for another API origin.
+Open `http://localhost:3000`. In development, the web app defaults to
+`http://localhost:8000`; set `NEXT_PUBLIC_API_URL` for another API origin.
+Production uses the same-origin `/v1` contract, which rewrites to the Vercel
+Python function under `/api/v1`.
 
 PostgreSQL with pgvector is available for the Week 2 storage slice:
 
