@@ -54,6 +54,7 @@ async def request_context(
     return response
 
 
+@app.get("/api/v1/health", response_model=HealthResponse, include_in_schema=False)
 @app.get("/v1/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse(
@@ -64,6 +65,7 @@ def health() -> HealthResponse:
     )
 
 
+@app.post("/api/v1/analyze", response_model=FitAnalysis, include_in_schema=False)
 @app.post("/v1/analyze", response_model=FitAnalysis)
 def analyze(payload: AnalyzeRequest) -> FitAnalysis:
     analysis = analyze_job(payload.job_text, payload.candidate_profile_id, MODE)
@@ -73,6 +75,11 @@ def analyze(payload: AnalyzeRequest) -> FitAnalysis:
     return analysis
 
 
+@app.get(
+    "/api/v1/analyses/{analysis_id}",
+    response_model=FitAnalysis,
+    include_in_schema=False,
+)
 @app.get("/v1/analyses/{analysis_id}", response_model=FitAnalysis)
 def get_analysis(analysis_id: str) -> FitAnalysis:
     if analysis_id not in ANALYSES:

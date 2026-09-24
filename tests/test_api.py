@@ -1,8 +1,13 @@
 from fastapi.testclient import TestClient
 
+from api.index import app as vercel_app
 from api.main import app
 
 client = TestClient(app)
+
+
+def test_vercel_entrypoint_exports_the_application() -> None:
+    assert vercel_app is app
 
 
 def test_health_reports_truthful_demo_dependencies() -> None:
@@ -11,6 +16,10 @@ def test_health_reports_truthful_demo_dependencies() -> None:
     assert response.status_code == 200
     assert response.json()["mode"] == "deterministic"
     assert response.json()["database"] == "in-memory-demo"
+
+
+def test_vercel_prefixed_health_route_matches_public_contract() -> None:
+    assert client.get("/api/v1/health").json() == client.get("/v1/health").json()
 
 
 def test_analyze_returns_citations_for_every_positive_assessment() -> None:
