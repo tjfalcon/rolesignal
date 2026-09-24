@@ -7,6 +7,11 @@ services:
       POSTGRES_PASSWORD: rolesignal-local
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rolesignal -d rolesignal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
       - rolesignal-postgres:/var/lib/postgresql/data
 

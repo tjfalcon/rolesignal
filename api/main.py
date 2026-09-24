@@ -11,10 +11,11 @@ from starlette.responses import Response
 
 from api.analyzer import analyze_job
 from api.models import AnalyzeRequest, FitAnalysis, HealthResponse
+from api.retrieval_backends import RetrievalBackend, create_retrieval_backend
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("rolesignal")
-MODE = "deterministic"
+RETRIEVAL_BACKEND: RetrievalBackend = create_retrieval_backend()
 ANALYSES: OrderedDict[str, FitAnalysis] = OrderedDict()
 MAX_ANALYSES = 50
 
@@ -59,8 +60,8 @@ async def request_context(
 def health() -> HealthResponse:
     return HealthResponse(
         status="ok",
-        mode=MODE,
-        database="in-memory-demo",
+        mode=RETRIEVAL_BACKEND.mode,
+        database=RETRIEVAL_BACKEND.database_status(),
         model_provider="available-not-called" if os.getenv("OPENAI_API_KEY") else "not-configured",
     )
 
@@ -68,7 +69,11 @@ def health() -> HealthResponse:
 @app.post("/api/v1/analyze", response_model=FitAnalysis, include_in_schema=False)
 @app.post("/v1/analyze", response_model=FitAnalysis)
 def analyze(payload: AnalyzeRequest) -> FitAnalysis:
-    analysis = analyze_job(payload.job_text, payload.candidate_profile_id, MODE)
+    analysis = analyze_job(
+        payload.job_text,
+        payload.candidate_profile_id,
+        backend=RETRIEVAL_BACKEND,
+    )
     ANALYSES[analysis.analysis_id] = analysis
     while len(ANALYSES) > MAX_ANALYSES:
         ANALYSES.popitem(last=False)
