@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently --kill-others --names web,api --prefix-colors cyan,magenta \"npm:dev:web\" \"npm:dev:api\"",
+    "dev:web": "next dev",
+    "dev:api": ".venv/bin/python -m uvicorn api.main:app --reload --port 8000 --env-file .env.local",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit"
@@ -17,6 +19,7 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "concurrently": "^10.0.5",
     "typescript": "7.0.2"
   }
 }

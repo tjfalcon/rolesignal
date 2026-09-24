@@ -26,6 +26,19 @@ def test_vercel_prefixed_health_route_matches_public_contract() -> None:
     assert client.get("/api/v1/health").json() == client.get("/v1/health").json()
 
 
+def test_local_web_fallback_port_is_allowed_by_cors() -> None:
+    response = client.options(
+        "/v1/analyze",
+        headers={
+            "Origin": "http://localhost:3001",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:3001"
+
+
 def test_analyze_returns_citations_for_every_positive_assessment() -> None:
     response = client.post(
         "/v1/analyze",
