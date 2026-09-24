@@ -1,7 +1,7 @@
 import logging
 from typing import Protocol, cast
 
-from sqlalchemy import Engine, Select, select, text
+from sqlalchemy import Engine, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from api.database import create_database_engine, create_session_factory, database_url, session_scope
@@ -155,7 +155,7 @@ class PostgresRetrievalBackend:
     ) -> list[CandidateEvidence]:
         query_vector = local_embedding(query)
         distance = EvidenceRecord.embedding.cosine_distance(query_vector)
-        statement: Select[tuple[EvidenceRecord]] = (
+        statement = (
             select(EvidenceRecord)
             .where(
                 EvidenceRecord.profile_id == profile_id,
