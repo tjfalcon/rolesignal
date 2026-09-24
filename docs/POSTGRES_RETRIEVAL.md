@@ -41,11 +41,26 @@ deterministic local fixture backend instead of fabricating or dropping citations
 
 1. Provision managed PostgreSQL with pgvector support.
 2. Add its encrypted `DATABASE_URL` to the appropriate Vercel environments.
-3. Run `alembic upgrade head` against the managed database.
+3. Run `alembic upgrade head` against the managed database for initial provisioning.
 4. Run `python -m scripts.seed_evidence` against that database.
 5. Confirm `/v1/health` reports `postgres-ready`.
 6. Run the golden retrieval and citation-integrity suites against the hosted environment.
 7. Keep public job-description submissions transient; do not enable resume uploads yet.
+
+## Deployment migrations
+
+Vercel runs `scripts.migrate_deployment` before the Next.js production build. The runner is
+deliberately active only when `VERCEL_ENV` is `preview` or `production`; ordinary local builds
+never mutate a database. It uses `DATABASE_URL_UNPOOLED` for Alembic and leaves the pooled
+`DATABASE_URL` available to application traffic.
+
+Preview deployments receive isolated Neon branches, so a pull request can apply and exercise
+its schema migration without changing production. Production deployments apply the same
+versioned migration before the new application version becomes available. Migrations must
+therefore follow an expand-and-contract approach when a change cannot be completed atomically.
+
+Evidence seeding is not part of every deployment. It is an explicit provisioning task so future
+candidate-managed evidence is never overwritten by a build.
 
 The local Docker URL must never be added to Vercel: from a serverless function, `localhost`
 refers to that function's own runtime rather than the developer's PostgreSQL container.
