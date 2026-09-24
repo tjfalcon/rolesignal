@@ -14,13 +14,19 @@ from api.models import (
     RequirementType,
 )
 from api.retrieval import lexical_score, to_match
-from api.retrieval_backends import LocalRetrievalBackend, RetrievalBackend
+from api.retrieval_backends import (
+    FallbackRetrievalBackend,
+    LocalRetrievalBackend,
+    RetrievalBackend,
+)
 
 DATA_DIR = Path(__file__).parent / "data"
 
 
 def load_fixture_corpus(profile_id: str) -> list[CandidateEvidence]:
-    filename = "demo_thomas.json" if profile_id == "demo-thomas" else "synthetic.json"
+    filename = {"demo-thomas": "demo_thomas.json", "synthetic": "synthetic.json"}.get(profile_id)
+    if filename is None:
+        return []
     raw = json.loads((DATA_DIR / filename).read_text())
     return [CandidateEvidence.model_validate(item) for item in raw]
 
@@ -105,6 +111,8 @@ def analyze_job(
 ) -> FitAnalysis:
     started = time.perf_counter()
     active_backend = backend or LocalRetrievalBackend()
+    if isinstance(active_backend, FallbackRetrievalBackend):
+        active_backend = active_backend.prepare(profile_id)
     corpus = active_backend.load_corpus(profile_id)
     sections, requirements = parse_job_requirements(job_text)
     assessments = [

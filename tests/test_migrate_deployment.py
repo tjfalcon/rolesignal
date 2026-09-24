@@ -20,9 +20,7 @@ def test_skips_outside_vercel_deployment(
 
 
 @pytest.mark.parametrize("environment", ["preview", "production"])
-def test_requires_unpooled_url(
-    monkeypatch: pytest.MonkeyPatch, environment: str
-) -> None:
+def test_requires_unpooled_url(monkeypatch: pytest.MonkeyPatch, environment: str) -> None:
     monkeypatch.setenv("VERCEL_ENV", environment)
     monkeypatch.delenv("DATABASE_URL_UNPOOLED", raising=False)
 

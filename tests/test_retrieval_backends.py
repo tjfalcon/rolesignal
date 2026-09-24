@@ -14,3 +14,7 @@ def test_reciprocal_rank_fusion_combines_rankings_without_raw_score_assumptions(
     assert ranked[0].evidence.id == corpus[1].id
     assert {item.evidence.id for item in ranked} == {item.id for item in corpus}
     assert all(0 <= item.score <= 1 for item in ranked)
+
+
+def test_unknown_profile_does_not_silently_use_synthetic_fixture() -> None:
+    assert load_fixture_corpus("unknown-candidate") == []

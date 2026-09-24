@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -63,6 +64,58 @@ class CandidateEvidence(BaseModel):
     visibility: str = "public"
 
 
+class ResumeVersionSummary(BaseModel):
+    id: str
+    version_number: int
+    label: str
+    status: str
+    source_name: str
+    evidence_count: int = 0
+    created_at: datetime
+    activated_at: datetime | None = None
+
+
+class CandidateProfileDetail(BaseModel):
+    id: str
+    display_name: str
+    headline: str
+    visibility: str
+    active_resume_version_id: str | None
+    versions: list[ResumeVersionSummary]
+
+
+class ResumeVersionCreate(BaseModel):
+    label: str = Field(min_length=1, max_length=160)
+    source_name: str = Field(default="Manual entry", min_length=1, max_length=255)
+    copy_active_evidence: bool = True
+
+
+class EvidenceCreate(BaseModel):
+    claim: str = Field(min_length=10, max_length=2_000)
+    skill_tags: list[str] = Field(min_length=1, max_length=30)
+    source: str = Field(min_length=1, max_length=255)
+    source_locator: str = Field(min_length=1, max_length=500)
+    visibility: str = Field(default="public", pattern="^(public|private)$")
+
+
+class EvidenceUpdate(BaseModel):
+    claim: str | None = Field(default=None, min_length=10, max_length=2_000)
+    skill_tags: list[str] | None = Field(default=None, min_length=1, max_length=30)
+    source: str | None = Field(default=None, min_length=1, max_length=255)
+    source_locator: str | None = Field(default=None, min_length=1, max_length=500)
+    visibility: str | None = Field(default=None, pattern="^(public|private)$")
+    approved: bool | None = None
+
+
+class ManagedEvidence(CandidateEvidence):
+    approved: bool
+
+
+class ResumeVersionDetail(ResumeVersionSummary):
+    profile_id: str
+    evidence: list[ManagedEvidence]
+
+
 class JobSection(BaseModel):
     model_config = ConfigDict(extra="forbid")
     id: str
@@ -109,7 +162,9 @@ class AnalysisMetrics(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     job_text: str = Field(min_length=80, max_length=30_000)
-    candidate_profile_id: str = Field(default="demo-thomas", pattern="^(demo-thomas|synthetic)$")
+    candidate_profile_id: str = Field(
+        default="demo-thomas", pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$", max_length=80
+    )
 
 
 class FitAnalysis(BaseModel):

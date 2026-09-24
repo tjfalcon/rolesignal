@@ -6,6 +6,7 @@ from api.db_models import EvidenceRecord
 from api.retrieval import local_embedding
 
 PROFILES = ("demo-thomas", "synthetic")
+VERSION_IDS = {"demo-thomas": "demo-thomas-v1", "synthetic": "synthetic-v1"}
 
 
 def main() -> None:
@@ -27,6 +28,8 @@ def main() -> None:
                     "source": evidence.source,
                     "source_locator": evidence.source_locator,
                     "visibility": evidence.visibility,
+                    "resume_version_id": VERSION_IDS[profile_id],
+                    "approved": True,
                     "embedding": local_embedding(searchable_text),
                 }
             )
@@ -40,6 +43,8 @@ def main() -> None:
             "source": statement.excluded.source,
             "source_locator": statement.excluded.source_locator,
             "visibility": statement.excluded.visibility,
+            "resume_version_id": statement.excluded.resume_version_id,
+            "approved": statement.excluded.approved,
             "embedding": statement.excluded.embedding,
         },
     )

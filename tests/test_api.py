@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from api.index import app as vercel_app
@@ -81,3 +82,27 @@ def test_rejects_short_or_unknown_profile_inputs() -> None:
         json={"candidate_profile_id": "private-upload", "job_text": "too short"},
     )
     assert response.status_code == 422
+
+
+def test_profile_administration_fails_closed_without_secret(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("PROFILE_ADMIN_TOKEN", raising=False)
+
+    response = client.get("/v1/profiles/demo-thomas")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Profile administration is not configured"
+
+
+def test_profile_administration_rejects_invalid_secret(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("PROFILE_ADMIN_TOKEN", "expected-secret")
+
+    response = client.get(
+        "/v1/profiles/demo-thomas",
+        headers={"X-Profile-Admin-Token": "wrong-secret"},
+    )
+
+    assert response.status_code == 401

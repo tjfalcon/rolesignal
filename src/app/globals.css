@@ -67,6 +67,44 @@ blockquote { margin: 14px 0 0; background: #faf8f2; border-left: 2px solid var(-
 blockquote cite { display: block; margin-top: 8px; color: var(--blue); font: normal .7rem ui-monospace, monospace; }
 details { margin-top: 20px; border: 1px solid var(--line); padding: 15px 18px; color: var(--muted); font-size: .85rem; }
 details summary { color: var(--ink); font-weight: 800; cursor: pointer; }
+.profileManager { padding: 42px 0 55px; border-bottom: 1px solid var(--ink); }
+.profileManager .panelHead { margin-bottom: 12px; }
+.profileManager .panelHead small { color: var(--muted); font: .72rem ui-monospace, monospace; text-transform: uppercase; }
+.profileIntro { max-width: 760px; margin: 0 0 30px; color: var(--muted); line-height: 1.55; }
+.adminConnect { display: grid; grid-template-columns: minmax(240px, 520px) auto; align-items: end; gap: 12px; padding: 24px; border: 1px solid var(--ink); background: #faf8f2; }
+.adminConnect label { grid-column: 1 / -1; color: var(--muted); font-size: .8rem; }
+.profileManager input { min-height: 44px; width: 100%; border: 1px solid var(--ink); background: #fff; color: var(--ink); padding: 9px 11px; font: inherit; }
+.profileGrid { display: grid; grid-template-columns: minmax(260px, .55fr) minmax(480px, 1.45fr); border: 1px solid var(--ink); }
+.versionRail { padding: 24px; border-right: 1px solid var(--ink); background: #e8e5dd; }
+.versionRail > strong { font-size: 1.2rem; }
+.versionRail > p { min-height: 52px; color: var(--muted); font-size: .83rem; line-height: 1.5; }
+.versionRail form { display: grid; gap: 8px; margin: 22px 0; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+.versionRail label, .evidenceForm label { color: var(--muted); font-size: .75rem; }
+.versionRail form button, .evidenceForm button, .editorHead button { min-height: 42px; border: 1px solid var(--ink); background: var(--acid); font-weight: 800; cursor: pointer; }
+.versionList { display: grid; gap: 7px; }
+.versionList button { display: grid; gap: 5px; padding: 12px; border: 1px solid var(--line); background: #faf8f2; text-align: left; cursor: pointer; }
+.versionList button.selected { border-color: var(--blue); box-shadow: inset 4px 0 var(--blue); }
+.versionList span { color: var(--muted); font: .68rem ui-monospace, monospace; text-transform: uppercase; }
+.evidenceEditor { padding: 24px; min-width: 0; }
+.editorHead { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.editorHead > div { display: grid; gap: 5px; }
+.editorHead span { color: var(--blue); font: .68rem ui-monospace, monospace; text-transform: uppercase; }
+.editorHead button { padding: 0 16px; }
+.evidenceForm { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; padding: 20px 0; border-bottom: 1px solid var(--ink); }
+.evidenceForm label { grid-column: 1 / -1; display: grid; gap: 6px; }
+.evidenceForm > div { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.evidenceForm textarea { min-height: 105px; font-family: inherit; font-size: .85rem; line-height: 1.5; }
+.evidenceForm button { padding: 0 15px; }
+.evidenceForm button[type="button"] { background: transparent; }
+.managedEvidence { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+.managedEvidence article { display: flex; flex-direction: column; min-height: 180px; padding: 16px; border: 1px solid var(--line); background: #faf8f2; }
+.managedEvidence article.unapproved { opacity: .52; }
+.managedEvidence p { margin: 0 0 10px; font-size: .86rem; line-height: 1.45; }
+.managedEvidence small { color: var(--blue); font: .67rem/1.4 ui-monospace, monospace; text-transform: uppercase; }
+.managedEvidence cite { margin-top: auto; padding-top: 14px; color: var(--muted); font: normal .7rem/1.4 ui-monospace, monospace; }
+.managedEvidence article > div { display: flex; gap: 12px; margin-top: 12px; }
+.managedEvidence button { border: 0; border-bottom: 1px solid; padding: 3px 0; background: none; cursor: pointer; }
+.adminMessage { margin: 12px 0 0; color: var(--blue); font-size: .8rem; }
 footer { min-height: 130px; display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: .8rem; }
 :focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
 
@@ -76,6 +114,8 @@ footer { min-height: 130px; display: flex; align-items: center; justify-content:
   .inputPanel { border-right: 0; border-bottom: 1px solid var(--ink); padding-right: 0; }
   .results { padding-left: 0; }
   textarea { min-height: 400px; }
+  .profileGrid { grid-template-columns: 1fr; }
+  .versionRail { border-right: 0; border-bottom: 1px solid var(--ink); }
 }
 
 @media (max-width: 560px) {
@@ -83,6 +123,8 @@ footer { min-height: 130px; display: flex; align-items: center; justify-content:
   .intro h1 br { display: none; }
   .formFoot, footer { align-items: flex-start; flex-direction: column; }
   .analyze { width: 100%; justify-content: space-between; }
+  .adminConnect, .managedEvidence, .evidenceForm > div { grid-template-columns: 1fr; }
+  .adminConnect .analyze { grid-column: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

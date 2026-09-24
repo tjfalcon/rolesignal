@@ -15,7 +15,10 @@ This repository is a public applied-AI engineering case study by Thomas Falcon. 
 - Route education, language, work authorization, schedule, compensation, and location constraints
   to explicit human confirmation instead of résumé-similarity matching.
 - Retrieve candidate evidence through a configurable backend: PostgreSQL full-text search plus
-  pgvector locally, or deterministic fixture retrieval when no database is configured.
+  pgvector in local and hosted environments, or deterministic fixture retrieval when no database
+  is configured.
+- Create immutable sanitized résumé versions, review evidence, and atomically activate the version
+  used for future comparisons through a token-protected administrator workspace.
 - Render exact claim and source-locator citations for supported or adjacent assessments.
 - Treat compensation and location as human-confirmation items.
 - Return missing requirements without fabricated evidence.
@@ -31,7 +34,7 @@ The default is a **deterministic, zero-cost demo**. It does not call OpenAI and 
 |---|---:|
 | Golden retrieval cases | 30 |
 | Recall@5 | 100% (30/30) |
-| Automated tests | 17 passing with PostgreSQL enabled |
+| Automated tests | 32 passing with PostgreSQL enabled |
 | Python coverage | 91% with PostgreSQL integration tests |
 | Known fabricated candidate claims in tests | 0 |
 | Hosted model calls in default demo | 0 |
@@ -45,11 +48,12 @@ retrieval, and paraphrase stress cases.
 
 ```mermaid
 flowchart LR
-  Browser[Next.js user interface] --> API[FastAPI /v1/analyze]
+  Browser[Next.js analysis + profile editor] --> API[FastAPI API]
+  API --> Profiles[Active resume version]
   API --> Sections[Section detection + provenance]
   Sections --> Extract[Typed requirement extraction]
   Extract --> Select{DATABASE_URL configured?}
-  Select -->|Yes| PG[(PostgreSQL)]
+  Select -->|Yes| PG[(Neon or local PostgreSQL)]
   PG --> FTS[Full-text ranking]
   PG --> Vector[pgvector ranking]
   FTS --> Fuse[Reciprocal-rank fusion]
@@ -62,10 +66,10 @@ flowchart LR
   Contract --> Browser
 ```
 
-Candidate evidence, skill tags, source locators, and deterministic test embeddings can be stored
-in PostgreSQL. Job submissions and completed analyses remain transient: the API keeps only a
-bounded in-process analysis cache. The browser accepts a preloaded profile ID; there is no public
-resume-upload endpoint in v1. See [the full runtime and data-flow diagrams](docs/ARCHITECTURE.md).
+Candidate profiles, immutable résumé versions, evidence, source locators, and deterministic test
+embeddings are stored in PostgreSQL. Job submissions and completed analyses remain transient: the
+API keeps only a bounded in-process analysis cache. There is still no public résumé-upload
+endpoint. See [the full runtime and data-flow diagrams](docs/ARCHITECTURE.md).
 See [section-aware ingestion](docs/SECTION_INGESTION.md) for the classification and exclusion
 policy.
 
@@ -75,13 +79,13 @@ policy.
 |---|---|---|
 | Local with `DATABASE_URL` | PostgreSQL FTS + pgvector + RRF | Active and integration-tested |
 | Local without `DATABASE_URL` | Repository fixtures + local hashed vectors | Deterministic fallback |
-| Vercel production today | Repository fixtures + local hashed vectors | No `DATABASE_URL` is configured |
-| Vercel after managed database provisioning | PostgreSQL FTS + pgvector + RRF | Planned; requires migration and seed during deployment |
+| Vercel production | Neon PostgreSQL FTS + pgvector + RRF | Active; migrations run before deployment |
+| Vercel previews | Isolated Neon branch per Git branch | Active; migration runs before preview build |
 
-The deployed application therefore does **not** currently query PostgreSQL. Vercel packages the
-sanitized JSON fixtures with the FastAPI function, and the backend factory selects the local
-deterministic implementation because `DATABASE_URL` is absent. This is deliberate: merging the
-database code did not silently change the public demo's storage or availability behavior.
+The deployed application queries Neon through its pooled runtime URL. Alembic uses the direct
+unpooled URL during Vercel builds. If a runtime database query fails, the public demo can fall back
+to the packaged fixtures for the two known demo profiles; a legitimate empty or unknown profile
+never silently receives another candidate's evidence.
 
 ## API contracts
 
@@ -89,6 +93,8 @@ database code did not silently change the public demo's storage or availability 
   provenance-backed requirements, assessments, evidence, limitations, and metrics.
 - `GET /v1/analyses/{analysis_id}` — returns an analysis still present in the bounded demo cache.
 - `GET /v1/health` — reports the real demo mode, storage state, and provider configuration.
+- Token-protected profile routes create/list résumé versions, add or edit evidence, and activate a
+  reviewed draft. Active and archived versions are immutable.
 - Interactive OpenAPI docs are available at `/docs` while the API is running.
 
 Core public models live in [`api/models.py`](api/models.py): `CandidateEvidence`, `JobRequirement`, `RequirementAssessment`, and `FitAnalysis`.
@@ -103,6 +109,7 @@ python3 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
 docker compose up -d postgres
 export DATABASE_URL="postgresql+psycopg://rolesignal:rolesignal-local@localhost:5432/rolesignal"
+export PROFILE_ADMIN_TOKEN="choose-a-local-development-secret"
 .venv/bin/alembic upgrade head
 .venv/bin/python -m scripts.seed_evidence
 npm run dev
@@ -129,6 +136,8 @@ CI runs the TypeScript build and Python test/evaluation lanes independently.
 ## Privacy and truthfulness
 
 - Public users cannot upload résumés in v1.
+- Hosted profile mutations require `PROFILE_ADMIN_TOKEN`; if it is absent, they fail closed.
+- The current editor is for sanitized public evidence only, not private documents.
 - The demo corpus is sanitized and stored as public evidence.
 - Submitted job text is processed in memory and is not intentionally persisted; the current bounded analysis cache resets with the process.
 - The default demo makes no external model request.
