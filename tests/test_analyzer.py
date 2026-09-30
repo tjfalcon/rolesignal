@@ -1,13 +1,17 @@
 from pathlib import Path
 
-from api.analyzer import analyze_job, extract_requirements, load_corpus
+from api.analyzer import analyze_job, assess, extract_requirements, load_corpus
 from api.job_parser import parse_sections
 from api.models import (
     AssessmentStatus,
+    CandidateEvidence,
+    Importance,
+    JobRequirement,
     JobSectionType,
     RequirementCategory,
     RequirementType,
 )
+from api.retrieval import RankedEvidence
 
 
 def test_extracts_classifies_and_normalizes_requirements() -> None:
@@ -35,6 +39,39 @@ def test_missing_experience_never_receives_candidate_citation() -> None:
     missing = [item for item in analysis.assessments if item.status == AssessmentStatus.MISSING]
     assert missing
     assert all(not item.evidence_ids and not item.matches for item in missing)
+
+
+def test_supported_citations_match_the_requirement_skill() -> None:
+    requirement = JobRequirement(
+        id="requirement-1",
+        text="Build React applications with Kubernetes",
+        category=RequirementCategory.REQUIRED,
+        importance=Importance.HIGH,
+        normalized_skills=["kubernetes"],
+    )
+    evidence = [
+        CandidateEvidence(
+            id=f"evidence-{index}",
+            claim=claim,
+            skill_tags=tags,
+            source="Test resume",
+            source_locator=f"line {index}",
+        )
+        for index, claim, tags in [
+            (1, "Built React applications for customers", ["react"]),
+            (2, "Built applications with React", ["react"]),
+            (3, "Managed Kubernetes clusters", ["kubernetes"]),
+        ]
+    ]
+
+    class RankedBackend:
+        def search(self, query: str, profile_id: str, limit: int = 3) -> list[RankedEvidence]:
+            return [RankedEvidence(item, 0.9, "test") for item in evidence]
+
+    result = assess(requirement, evidence, RankedBackend(), "demo-thomas")  # type: ignore[arg-type]
+
+    assert result.status == AssessmentStatus.SUPPORTED
+    assert result.evidence_ids == ["evidence-3"]
 
 
 def test_corpus_is_sanitized_and_public() -> None:

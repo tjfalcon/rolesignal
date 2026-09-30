@@ -70,8 +70,13 @@ def assess(
     direct_skill_matches = [
         item for item in ranked if requirement_skills & set(item.evidence.skill_tags)
     ]
-    if direct and (not requirement_skills or direct_skill_matches):
-        selected = direct[:2]
+    supported = (
+        [item for item in direct if item in direct_skill_matches]
+        if requirement_skills
+        else direct
+    )
+    if supported:
+        selected = supported[:2]
         status = AssessmentStatus.SUPPORTED
         explanation = (
             "Direct evidence supports this requirement. "
