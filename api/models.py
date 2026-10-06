@@ -92,17 +92,17 @@ class ResumeVersionCreate(BaseModel):
 
 class EvidenceCreate(BaseModel):
     claim: str = Field(min_length=10, max_length=2_000)
-    skill_tags: list[str] = Field(min_length=1, max_length=30)
-    source: str = Field(min_length=1, max_length=255)
-    source_locator: str = Field(min_length=1, max_length=500)
+    skill_tags: list[str] | None = Field(default=None, max_length=100)
+    source: str = Field(default="Manual entry", min_length=1, max_length=255)
+    source_locator: str = Field(default="", max_length=500)
     visibility: str = Field(default="public", pattern="^(public|private)$")
 
 
 class EvidenceUpdate(BaseModel):
     claim: str | None = Field(default=None, min_length=10, max_length=2_000)
-    skill_tags: list[str] | None = Field(default=None, min_length=1, max_length=30)
+    skill_tags: list[str] | None = Field(default=None, max_length=100)
     source: str | None = Field(default=None, min_length=1, max_length=255)
-    source_locator: str | None = Field(default=None, min_length=1, max_length=500)
+    source_locator: str | None = Field(default=None, max_length=500)
     visibility: str | None = Field(default=None, pattern="^(public|private)$")
     approved: bool | None = None
 

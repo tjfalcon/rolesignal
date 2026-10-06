@@ -16,6 +16,7 @@ from api.models import (
     ResumeVersionSummary,
 )
 from api.retrieval import local_embedding
+from api.skills import detect_skills
 
 
 class ProfileStoreUnavailableError(RuntimeError):
@@ -138,7 +139,11 @@ class ProfileService:
     def add_evidence(self, version_id: str, payload: EvidenceCreate) -> ManagedEvidence:
         with self.factory.begin() as session:
             version = self._require_draft(session, version_id)
-            skill_tags = self._normalize_tags(payload.skill_tags)
+            skill_tags = self._normalize_tags(
+                payload.skill_tags
+                if payload.skill_tags is not None
+                else detect_skills(payload.claim)
+            )
             claim = payload.claim.strip()
             evidence = EvidenceRecord(
                 id=str(uuid.uuid4()),
@@ -171,7 +176,7 @@ class ProfileService:
             )
             if evidence is None:
                 raise VersionNotFoundError(evidence_id)
-            changes = payload.model_dump(exclude_unset=True)
+            changes = payload.model_dump(exclude_unset=True, exclude_none=True)
             for field in ("claim", "source", "source_locator"):
                 if field in changes:
                     changes[field] = changes[field].strip()
@@ -227,8 +232,6 @@ class ProfileService:
     @staticmethod
     def _normalize_tags(tags: list[str]) -> list[str]:
         normalized = list(dict.fromkeys(tag.strip().lower() for tag in tags if tag.strip()))
-        if not normalized:
-            raise ValueError("At least one non-empty skill tag is required")
         return normalized
 
     @staticmethod

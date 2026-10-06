@@ -130,3 +130,9 @@ footer { min-height: 130px; display: flex; align-items: center; justify-content:
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+
+.captureHelp { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: .75rem; line-height: 1.5; }
+.captureSkills { grid-column: 1 / -1; min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--line); display: grid; gap: 10px; }
+.captureSkills legend { font-size: .8rem; }
+.skillChips { display: flex; flex-wrap: wrap; gap: 8px; font-size: .75rem; }
+.skillChips button { border-radius: 16px; }

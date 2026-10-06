@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { detectSkills } from "@/lib/skills";
 
 interface Evidence {
   id: string;
@@ -40,7 +41,7 @@ const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL
 const emptyEvidence = {
   claim: "",
   tags: "",
-  source: "Sanitized public resume",
+  source: "Manual entry",
   locator: "",
 };
 
@@ -50,6 +51,12 @@ export default function ProfileManager() {
   const [version, setVersion] = useState<Version | null>(null);
   const [label, setLabel] = useState("Applied AI resume");
   const [evidenceForm, setEvidenceForm] = useState(emptyEvidence);
+  const [excludedTags, setExcludedTags] = useState<string[]>([]);
+  const detectedTags = detectSkills(evidenceForm.claim);
+  const selectedTags = [...new Set([
+    ...detectedTags,
+    ...evidenceForm.tags.split(",").map((tag) => tag.trim().toLowerCase()).filter(Boolean),
+  ])].filter((tag) => !excludedTags.includes(tag));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -91,6 +98,7 @@ export default function ProfileManager() {
     setVersion(loaded);
     setEditingId(null);
     setEvidenceForm(emptyEvidence);
+    setExcludedTags([]);
   }
 
   async function createDraft(event: FormEvent<HTMLFormElement>) {
@@ -114,6 +122,7 @@ export default function ProfileManager() {
 
   function edit(item: Evidence) {
     setEditingId(item.id);
+    setExcludedTags(detectSkills(item.claim).filter((tag) => !item.skill_tags.includes(tag)));
     setEvidenceForm({
       claim: item.claim,
       tags: item.skill_tags.join(", "),
@@ -129,7 +138,7 @@ export default function ProfileManager() {
     setMessage("");
     const payload = {
       claim: evidenceForm.claim,
-      skill_tags: evidenceForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+      skill_tags: selectedTags,
       source: evidenceForm.source,
       source_locator: evidenceForm.locator,
       visibility: "public",
@@ -147,7 +156,7 @@ export default function ProfileManager() {
         });
       }
       await loadVersion(version.id);
-      setMessage(editingId ? "Evidence updated." : "Evidence added to the draft.");
+      setMessage(editingId ? "Experience updated." : "Experience added to the draft.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to save evidence");
     } finally {
@@ -243,14 +252,33 @@ export default function ProfileManager() {
                 </div>
                 {version.status === "draft" && (
                   <form className="evidenceForm" onSubmit={saveEvidence}>
-                    <label>Evidence claim<textarea value={evidenceForm.claim} onChange={(event) => setEvidenceForm({ ...evidenceForm, claim: event.target.value })} required minLength={10} /></label>
-                    <label>Skill tags, comma separated<input value={evidenceForm.tags} onChange={(event) => setEvidenceForm({ ...evidenceForm, tags: event.target.value })} required /></label>
-                    <div>
-                      <label>Source<input value={evidenceForm.source} onChange={(event) => setEvidenceForm({ ...evidenceForm, source: event.target.value })} required /></label>
-                      <label>Source locator<input value={evidenceForm.locator} onChange={(event) => setEvidenceForm({ ...evidenceForm, locator: event.target.value })} required /></label>
-                    </div>
-                    <button type="submit" disabled={busy}>{editingId ? "Save evidence" : "Add evidence"}</button>
-                    {editingId && <button type="button" onClick={() => { setEditingId(null); setEvidenceForm(emptyEvidence); }}>Cancel edit</button>}
+                    <label>What did you do?
+                      <textarea value={evidenceForm.claim} onChange={(event) => setEvidenceForm({ ...evidenceForm, claim: event.target.value })} required minLength={10} maxLength={2000} aria-describedby="experience-help" placeholder="Paste a resume excerpt, a work story, or a short code example. Describe your contribution." />
+                    </label>
+                    <p id="experience-help" className="captureHelp">Add one experience at a time. Your words are saved as entered. {evidenceForm.claim.length}/2,000 characters.</p>
+                    <fieldset className="captureSkills">
+                      <legend>Skills mentioned</legend>
+                      <p className="captureHelp">Matched from your text. Remove technologies you only mentioned, rather than used. Saving accepts the remaining skills.</p>
+                      <div className="skillChips" aria-live="polite">
+                        {selectedTags.map((tag) => <button key={tag} type="button" aria-label={`Remove ${tag}`} onClick={() => {
+                          setExcludedTags([...excludedTags, tag]);
+                          setEvidenceForm({ ...evidenceForm, tags: evidenceForm.tags.split(",").filter((value) => value.trim().toLowerCase() !== tag).join(", ") });
+                        }}>{tag} ×</button>)}
+                        {!selectedTags.length && <span>No skills selected. You can still save this experience.</span>}
+                      </div>
+                      <label>Add skills (optional, comma separated)<input value={evidenceForm.tags} onChange={(event) => {
+                        setEvidenceForm({ ...evidenceForm, tags: event.target.value });
+                        const added = event.target.value.split(",").map((tag) => tag.trim().toLowerCase());
+                        setExcludedTags(excludedTags.filter((tag) => !added.includes(tag)));
+                      }} placeholder="Any skills the dictionary missed" /></label>
+                      {excludedTags.length > 0 && <button type="button" onClick={() => setExcludedTags([])}>Restore detected skills</button>}
+                    </fieldset>
+                    <label>Reference (optional)
+                      <input value={evidenceForm.locator} onChange={(event) => setEvidenceForm({ ...evidenceForm, locator: event.target.value })} maxLength={500} placeholder="Resume section, project name, or link—whatever helps you find it later" />
+                    </label>
+                    {editingId && evidenceForm.source !== "Manual entry" && <p className="captureHelp">Original source: {evidenceForm.source}</p>}
+                    <button type="submit" disabled={busy}>{editingId ? "Save experience" : "Add experience"}</button>
+                    {editingId && <button type="button" onClick={() => { setEditingId(null); setEvidenceForm(emptyEvidence); setExcludedTags([]); }}>Cancel edit</button>}
                   </form>
                 )}
                 <div className="managedEvidence">
@@ -258,7 +286,7 @@ export default function ProfileManager() {
                     <article key={item.id} className={item.approved ? "" : "unapproved"}>
                       <p>{item.claim}</p>
                       <small>{item.skill_tags.join(" · ")}</small>
-                      <cite>{item.source} · {item.source_locator}</cite>
+                      <cite>{item.source}{item.source_locator ? ` · ${item.source_locator}` : ""}</cite>
                       {version.status === "draft" && <div><button type="button" onClick={() => edit(item)}>Edit</button><button type="button" onClick={() => toggleApproval(item)}>{item.approved ? "Exclude" : "Approve"}</button></div>}
                     </article>
                   ))}
