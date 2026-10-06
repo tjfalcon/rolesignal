@@ -1,0 +1,88 @@
+{
+  "python": [],
+  "fastapi": [],
+  "typescript": [],
+  "javascript": [],
+  "react": [],
+  "react native": [],
+  "next.js": [
+    "nextjs",
+    "next js"
+  ],
+  "node.js": [
+    "nodejs",
+    "node js"
+  ],
+  "java": [],
+  "c#": [
+    "csharp",
+    "c sharp"
+  ],
+  "api": [
+    "apis"
+  ],
+  "sql": [],
+  "postgresql": [
+    "postgres"
+  ],
+  "rag": [
+    "retrieval-augmented generation"
+  ],
+  "retrieval": [],
+  "embeddings": [],
+  "vector search": [],
+  "llm": [
+    "large language model",
+    "large language models",
+    "llms"
+  ],
+  "agent": [],
+  "agentic workflows": [],
+  "claude code": [],
+  "cursor": [],
+  "codex": [],
+  "github copilot": [
+    "copilot"
+  ],
+  "observability": [],
+  "testing": [],
+  "pytest": [],
+  "playwright": [],
+  "ci/cd": [
+    "ci / cd"
+  ],
+  "github actions": [],
+  "vercel": [],
+  "aws": [
+    "amazon web services"
+  ],
+  "azure": [],
+  "docker": [],
+  "kubernetes": [],
+  "technical leadership": [],
+  "stakeholder management": [],
+  "machine learning": [],
+  "agile": [],
+  "scrum": [],
+  "sitecore": [],
+  "ordercloud": [
+    "order cloud"
+  ],
+  "c++": [],
+  "graphql": [],
+  "rest": [],
+  "html": [],
+  "css": [],
+  "tailwind css": [
+    "tailwind"
+  ],
+  "git": [],
+  "github": [],
+  "redis": [],
+  "mongodb": [],
+  "mysql": [],
+  "terraform": [],
+  "azure devops": [],
+  "accessibility": [],
+  "mentoring": []
+}

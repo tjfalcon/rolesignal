@@ -8,49 +8,7 @@ from api.models import (
     RequirementCategory,
     RequirementType,
 )
-
-SKILLS = [
-    "python",
-    "fastapi",
-    "typescript",
-    "javascript",
-    "react",
-    "react native",
-    "next.js",
-    "node.js",
-    "java",
-    "c#",
-    "api",
-    "sql",
-    "postgresql",
-    "rag",
-    "retrieval",
-    "embeddings",
-    "vector search",
-    "llm",
-    "agent",
-    "agentic workflows",
-    "claude code",
-    "cursor",
-    "codex",
-    "github copilot",
-    "observability",
-    "testing",
-    "pytest",
-    "playwright",
-    "ci/cd",
-    "github actions",
-    "vercel",
-    "aws",
-    "azure",
-    "docker",
-    "kubernetes",
-    "technical leadership",
-    "stakeholder management",
-    "machine learning",
-    "agile",
-    "scrum",
-]
+from api.skills import detect_skills
 
 HEADING_MARKUP = re.compile(r"^(?:#{1,6}\s+|\*\*|__)(.*?)(?:\*\*|__)?\s*$")
 BULLET_PREFIX = re.compile(r"^(?:\s*[•*\-–—]\s+|\s*\d+[.)]\s+)")
@@ -143,16 +101,7 @@ def parse_sections(job_text: str) -> list[JobSection]:
 
 
 def normalize_skills(text: str) -> list[str]:
-    lowered = text.lower().replace("nextjs", "next.js").replace("nodejs", "node.js")
-    aliases = {
-        "retrieval-augmented generation": "rag",
-        "large language model": "llm",
-        "apis": "api",
-        "copilot": "github copilot",
-    }
-    for source, target in aliases.items():
-        lowered = lowered.replace(source, target)
-    return [skill for skill in SKILLS if skill in lowered]
+    return detect_skills(text)
 
 
 def classify_requirement_type(text: str, skills: list[str]) -> RequirementType:

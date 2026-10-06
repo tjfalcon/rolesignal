@@ -178,7 +178,7 @@ export default function Analyzer() {
                       return item ? (
                         <blockquote key={id}>
                           “{item.claim}”
-                          <cite>{item.source} · {item.source_locator}</cite>
+                          <cite>{item.source}{item.source_locator ? ` · ${item.source_locator}` : ""}</cite>
                         </blockquote>
                       ) : null;
                     })}
