@@ -87,6 +87,10 @@ unpooled URL during Vercel builds. If a runtime database query fails, the public
 to the packaged fixtures for the two known demo profiles; a legitimate empty or unknown profile
 never silently receives another candidate's evidence.
 
+Vercel's Neon integration is connected to Production only, with automatic preview branch creation
+disabled. Preview-only secret `DATABASE_URL` and `DATABASE_URL_UNPOOLED` values point to the persistent
+Neon `preview` branch; the corresponding Production values continue to point to `main`.
+
 ## API contracts
 
 - `POST /v1/analyze` — accepts `job_text` and `candidate_profile_id`; returns detected sections,
