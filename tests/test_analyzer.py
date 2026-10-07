@@ -104,6 +104,24 @@ def test_section_parser_separates_company_requirements_and_constraints() -> None
     assert all(item.section_id and item.source_heading for item in requirements)
 
 
+def test_short_requirement_sentence_is_not_mistaken_for_a_section_heading() -> None:
+    posting = (
+        "Requirements\n"
+        "Build privacy-aware applications and maintain audit trails.\n"
+        "Experience with Python services."
+    )
+
+    sections = parse_sections(posting)
+    requirements = extract_requirements(posting)
+
+    assert len(sections) == 1
+    assert sections[0].section_type == JobSectionType.QUALIFICATIONS
+    assert [item.text for item in requirements] == [
+        "Build privacy-aware applications and maintain audit trails.",
+        "Experience with Python services.",
+    ]
+
+
 def test_candidate_constraints_require_confirmation_not_resume_similarity() -> None:
     posting = (Path("tests/fixtures") / "fullstack_principal_agentic.txt").read_text()
     analysis = analyze_job(posting, "demo-thomas")
