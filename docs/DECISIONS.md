@@ -48,9 +48,10 @@ fixture backend. If it is configured but a query fails, the wrapper logs the fai
 deterministic fallback. `/v1/health` exposes the selected mode and database readiness so a fallback
 cannot be mistaken for successful database retrieval.
 
-Vercel production and preview deployments now receive Neon connection variables. The application
+Vercel production and preview deployments receive Neon connection variables. The application
 uses the pooled URL; Alembic uses the unpooled URL before the build. Preview deployments migrate
-isolated database branches. Health reporting still makes runtime fallback visible.
+one shared `preview` branch; production uses `main`. Health reporting still makes runtime fallback
+visible.
 
 Each analysis pins its evidence source and active résumé-version ID before extraction begins. If
 PostgreSQL is selected successfully but a later search fails, that search fails closed instead of

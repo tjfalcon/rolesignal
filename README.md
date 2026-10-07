@@ -80,12 +80,16 @@ policy.
 | Local with `DATABASE_URL` | PostgreSQL FTS + pgvector + RRF | Active and integration-tested |
 | Local without `DATABASE_URL` | Repository fixtures + local hashed vectors | Deterministic fallback |
 | Vercel production | Neon PostgreSQL FTS + pgvector + RRF | Active; migrations run before deployment |
-| Vercel previews | Isolated Neon branch per Git branch | Active; migration runs before preview build |
+| Vercel previews | Shared Neon `preview` branch | Active; migration runs before preview build |
 
 The deployed application queries Neon through its pooled runtime URL. Alembic uses the direct
 unpooled URL during Vercel builds. If a runtime database query fails, the public demo can fall back
 to the packaged fixtures for the two known demo profiles; a legitimate empty or unknown profile
 never silently receives another candidate's evidence.
+
+Vercel's Neon integration is connected to Production only, with automatic preview branch creation
+disabled. Preview-only secret `DATABASE_URL` and `DATABASE_URL_UNPOOLED` values point to the persistent
+Neon `preview` branch; the corresponding Production values continue to point to `main`.
 
 ## API contracts
 

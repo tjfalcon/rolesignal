@@ -132,6 +132,7 @@ flowchart LR
   VercelBuild[Vercel build] -->|unpooled migration URL| Neon
 ```
 
-Preview deployments receive isolated Neon branches. Their Alembic migrations run before the
-application build, allowing schema and application changes to be tested together without altering
-production. Production follows the same migration gate against its stable Neon branch.
+Preview deployments share one persistent Neon `preview` branch. Their Alembic migrations run before
+the application build without altering production. Because previews share a schema, concurrent pull
+requests with incompatible migrations can interfere with each other; test those changes in sequence.
+Production follows the same migration gate against its stable Neon `main` branch.

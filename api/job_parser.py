@@ -85,10 +85,11 @@ def parse_sections(job_text: str) -> list[JobSection]:
         section_type = classify_section_heading(heading)
         is_marked_heading = bool(HEADING_MARKUP.match(raw_line.strip()))
         is_bullet = bool(re.match(r"^(?:[-•–—]|\d+[.)])\s+", raw_line.strip()))
+        is_sentence = bool(re.search(r"[.!?]$", raw_line.strip()))
         if (
             section_type is not None
             and not is_bullet
-            and (is_marked_heading or len(raw_line.strip()) <= 80)
+            and (is_marked_heading or (len(raw_line.strip()) <= 80 and not is_sentence))
         ):
             flush()
             pending_heading = heading
