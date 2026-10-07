@@ -54,9 +54,10 @@ deliberately active only when `VERCEL_ENV` is `preview` or `production`; ordinar
 never mutate a database. It uses `DATABASE_URL_UNPOOLED` for Alembic and leaves the pooled
 `DATABASE_URL` available to application traffic.
 
-Preview deployments receive isolated Neon branches, so a pull request can apply and exercise
-its schema migration without changing production. Production deployments apply the same
-versioned migration before the new application version becomes available. Migrations must
+Preview deployments share a persistent Neon `preview` branch, so a pull request can apply and
+exercise its schema migration without changing production. Preview schema changes can affect other
+active previews; run incompatible migration tests in sequence. Production deployments apply the
+same versioned migration before the new application version becomes available. Migrations must
 therefore follow an expand-and-contract approach when a change cannot be completed atomically.
 
 Evidence seeding is not part of every deployment. It is an explicit provisioning task so future
