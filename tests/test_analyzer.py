@@ -74,6 +74,17 @@ def test_supported_citations_match_the_requirement_skill() -> None:
     assert result.evidence_ids == ["evidence-3"]
 
 
+def test_compound_skill_requirement_is_not_supported_by_one_skill() -> None:
+    analysis = analyze_job(
+        "Required: Build Python and Kubernetes services for fleet operations.",
+        "demo-thomas",
+    )
+
+    assert analysis.requirements[0].normalized_skills == ["python", "kubernetes"]
+    assert analysis.assessments[0].status == AssessmentStatus.ADJACENT
+    assert analysis.assessments[0].evidence_ids == ["ghost-python"]
+
+
 def test_corpus_is_sanitized_and_public() -> None:
     corpus = load_corpus("demo-thomas")
     assert corpus

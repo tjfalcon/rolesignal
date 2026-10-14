@@ -71,7 +71,7 @@ def assess(
         item for item in ranked if requirement_skills & set(item.evidence.skill_tags)
     ]
     supported = (
-        [item for item in direct if item in direct_skill_matches]
+        [item for item in direct if requirement_skills <= set(item.evidence.skill_tags)]
         if requirement_skills
         else direct
     )
