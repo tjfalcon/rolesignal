@@ -1,4 +1,5 @@
 import re
+import unicodedata
 
 from api.models import (
     Importance,
@@ -12,10 +13,30 @@ from api.skills import detect_skills
 
 HEADING_MARKUP = re.compile(r"^(?:#{1,6}\s+|\*\*|__)(.*?)(?:\*\*|__)?\s*$")
 BULLET_PREFIX = re.compile(r"^(?:\s*[•*\-–—]\s+|\s*\d+[.)]\s+)")
+BENEFIT_ITEM = re.compile(
+    r"(?:401\s*\(k\)(?:\s+(?:\d+(?:\.\d+)?%\s+)?(?:employer\s+)?(?:match|plan))*"
+    r"|(?:health|medical|dental|vision|life|disability) insurance"
+    r"|(?:health savings|flexible spending) account(?:\s*\((?:HSA|FSA)\))?"
+    r"|paid time off|PTO)",
+    re.IGNORECASE,
+)
+WAGE_AMOUNT = re.compile(
+    r"[$€£]\s*\d[\d,.]*(?:\s*[-–—]\s*[$€£]?\s*\d[\d,.]*)?\s*"
+    r"(?:(?:a|an|per|/)\s*(?:year|yr|hour|hr|month)|annually)\b",
+    re.IGNORECASE,
+)
+CONSTRAINT_TYPES = {
+    RequirementType.COMPENSATION,
+    RequirementType.LOCATION,
+    RequirementType.SCHEDULE,
+    RequirementType.WORK_AUTHORIZATION,
+}
 
 
 def normalized_heading(line: str) -> str:
-    stripped = line.strip()
+    # Compare headings without invisible copy/paste formatting; source body text
+    # remains untouched so requirement quotes still resolve to the posting.
+    stripped = "".join(char for char in line if unicodedata.category(char) != "Cf").strip()
     match = HEADING_MARKUP.match(stripped)
     if match:
         stripped = match.group(1)
@@ -23,45 +44,108 @@ def normalized_heading(line: str) -> str:
 
 
 def classify_section_heading(heading: str) -> JobSectionType | None:
-    value = heading.lower().strip()
-    if not value:
-        return None
-    if any(term in value for term in ("work authorization", "visa", "sponsorship")):
-        return JobSectionType.WORK_AUTHORIZATION
-    if any(term in value for term in ("equal opportunity", "privacy", "legal")):
-        return JobSectionType.LEGAL
-    if any(term in value for term in ("what we offer", "benefits", "perks")):
-        return JobSectionType.BENEFITS
-    if any(term in value for term in ("compensation", "salary", "pay range")):
-        return JobSectionType.COMPENSATION
-    if any(term in value for term in ("location", "work arrangement", "schedule")):
-        return JobSectionType.LOCATION_AND_SCHEDULE
-    if any(term in value for term in ("responsibilities", "what you will do", "what you'll do")):
-        return JobSectionType.RESPONSIBILITIES
-    if any(
-        term in value
-        for term in (
+    value = heading.lower().replace("’", "'").rstrip(":?").strip()
+    aliases = {
+        JobSectionType.UNKNOWN: {"full job description"},
+        JobSectionType.WORK_AUTHORIZATION: {
+            "work authorization",
+            "work authorization requirements",
+            "visa requirements",
+            "visa or authorization requirements",
+            "sponsorship",
+            "sponsorship requirements",
+        },
+        JobSectionType.LEGAL: {
+            "equal opportunity",
+            "equal opportunity employer",
+            "privacy",
+            "privacy notice",
+            "privacy policy",
+            "legal",
+        },
+        JobSectionType.BENEFITS: {
+            "what we offer",
+            "benefits",
+            "company benefits",
+            "other benefits",
+            "employee benefits",
+            "compensation and benefits",
+            "salary and benefits",
+            "pay and benefits",
+            "perks",
+        },
+        JobSectionType.COMPENSATION: {"compensation", "salary", "pay range"},
+        JobSectionType.LOCATION_AND_SCHEDULE: {
+            "location",
+            "work arrangement",
+            "schedule",
+            "location and schedule",
+            "work location",
+            "work schedule",
+        },
+        JobSectionType.RESPONSIBILITIES: {
+            "responsibilities",
+            "key responsibilities",
+            "your responsibilities",
+            "job responsibilities",
+            "what you will do",
+            "what you'll do",
+        },
+        JobSectionType.QUALIFICATIONS: {
             "what we're looking for",
             "what we are looking for",
             "qualifications",
+            "required qualifications",
+            "preferred qualifications",
+            "minimum qualifications",
+            "basic qualifications",
+            "technical qualifications",
+            "minimum requirements",
             "requirements",
             "who you are",
-        )
-    ):
-        return JobSectionType.QUALIFICATIONS
-    if value.startswith("about ") or value in {"about us", "company", "who we are"}:
+            "who should apply",
+            "you'll fit right in if",
+            "this is probably a great fit if",
+            "experience",
+        },
+        JobSectionType.POSITION_SUMMARY: {
+            "job details",
+            "the position",
+            "the role",
+            "position",
+            "role",
+            "the opportunity",
+            "about the role",
+            "about the job",
+        },
+    }
+    for section_type, headings in aliases.items():
+        if value in headings:
+            return section_type
+    if value.startswith(("about ", "why ")) or value in {"company", "who we are"}:
         return JobSectionType.COMPANY_DESCRIPTION
-    if value in {"the position", "the role", "position", "role", "the opportunity"}:
-        return JobSectionType.POSITION_SUMMARY
     return None
+
+
+def has_job_board_summary(job_text: str) -> bool:
+    headings = {normalized_heading(line).lower() for line in job_text.splitlines()}
+    return "job details" in headings and "full job description" in headings
+
+
+def is_benefit_listing(text: str) -> bool:
+    return all(BENEFIT_ITEM.fullmatch(part.strip()) for part in re.split(r"[,;]", text))
 
 
 def parse_sections(job_text: str) -> list[JobSection]:
     pending_heading = "Unlabeled posting content"
     pending_type = JobSectionType.UNKNOWN
+    board_summary = has_job_board_summary(job_text)
+    if board_summary:
+        pending_type = JobSectionType.POSTING_METADATA
     pending_position = 0
     pending_lines: list[str] = []
     sections: list[JobSection] = []
+    implicit_company_intro = False
 
     def flush() -> None:
         nonlocal pending_lines
@@ -83,9 +167,11 @@ def parse_sections(job_text: str) -> list[JobSection]:
     for position, raw_line in enumerate(job_text.splitlines(), start=1):
         heading = normalized_heading(raw_line)
         section_type = classify_section_heading(heading)
+        if board_summary and heading.lower() == "job details":
+            section_type = JobSectionType.POSTING_METADATA
         is_marked_heading = bool(HEADING_MARKUP.match(raw_line.strip()))
-        is_bullet = bool(re.match(r"^(?:[-•–—]|\d+[.)])\s+", raw_line.strip()))
-        is_sentence = bool(re.search(r"[.!?]$", raw_line.strip()))
+        is_bullet = bool(BULLET_PREFIX.match(raw_line))
+        is_sentence = bool(re.search(r"[.!]$", heading))
         if (
             section_type is not None
             and not is_bullet
@@ -95,7 +181,25 @@ def parse_sections(job_text: str) -> list[JobSection]:
             pending_heading = heading
             pending_type = section_type
             pending_position = position
+            implicit_company_intro = False
             continue
+        # Unheaded employer introductions are common in copied job-board text.
+        # Keep the introduction as context, then resume candidate expectations
+        # when the text explicitly addresses "you" or "your".
+        content_type = None
+        if re.match(r"^(?:We're|We’re|We are) [A-Z][\w&-]*(?: [A-Z][\w&-]*){0,4}[.!]", heading):
+            content_type = JobSectionType.COMPANY_DESCRIPTION
+            implicit_company_intro = True
+        elif implicit_company_intro and re.match(r"^(?:you\b|you['’]|your\b)", heading, re.I):
+            content_type = JobSectionType.QUALIFICATIONS
+            implicit_company_intro = False
+        if content_type is not None:
+            flush()
+            pending_type = content_type
+            pending_heading = (
+                "Company introduction" if implicit_company_intro else "Candidate expectations"
+            )
+            pending_position = position
         pending_lines.append(raw_line)
     flush()
     return sections
@@ -107,13 +211,17 @@ def normalize_skills(text: str) -> list[str]:
 
 def classify_requirement_type(text: str, skills: list[str]) -> RequirementType:
     lowered = text.lower()
+    if WAGE_AMOUNT.search(text) or re.match(r"pay\s*:", lowered):
+        return RequirementType.COMPENSATION
     if any(term in lowered for term in ("authorized to work", "work authorization", "sponsor")):
         return RequirementType.WORK_AUTHORIZATION
     if any(term in lowered for term in ("degree", "bachelor", "master's", "college")):
         return RequirementType.EDUCATION
     if any(term in lowered for term in ("english", "spanish", "bilingual", "language")):
         return RequirementType.LANGUAGE
-    if any(term in lowered for term in ("hours per week", "40 hours", "schedule")):
+    if any(term in lowered for term in ("hours per week", "40 hours", "schedule")) or re.fullmatch(
+        r"(?:job type:\s*)?(?:full-time|part-time|contract|temporary|internship)", lowered
+    ):
         return RequirementType.SCHEDULE
     if any(term in lowered for term in ("remote", "hybrid", "location", "travel", "based in")):
         return RequirementType.LOCATION
@@ -170,6 +278,8 @@ def extract_requirements(job_text: str) -> tuple[list[JobSection], list[JobRequi
     requirements: list[JobRequirement] = []
     seen: set[str] = set()
     excluded_sections = {JobSectionType.COMPANY_DESCRIPTION, JobSectionType.LEGAL}
+    posting_title = next((line.strip() for line in job_text.splitlines() if line.strip()), "")
+    board_summary = has_job_board_summary(job_text)
 
     for section in sections:
         if section.section_type in excluded_sections:
@@ -186,6 +296,14 @@ def extract_requirements(job_text: str) -> tuple[list[JobSection], list[JobRequi
             key = text.lower()
             if key in seen or is_legal_boilerplate(text):
                 continue
+            if is_benefit_listing(text):
+                continue
+            if (
+                board_summary
+                and section.section_type == JobSectionType.UNKNOWN
+                and (text.startswith(posting_title))
+            ):
+                continue
             skills = normalize_skills(text)
             requirement_type = classify_requirement_type(text, skills)
             if len(text) < 18 and requirement_type not in {
@@ -195,11 +313,14 @@ def extract_requirements(job_text: str) -> tuple[list[JobSection], list[JobRequi
                 RequirementType.WORK_AUTHORIZATION,
             }:
                 continue
-            if section.section_type == JobSectionType.BENEFITS and requirement_type not in {
-                RequirementType.COMPENSATION,
-                RequirementType.LOCATION,
-                RequirementType.SCHEDULE,
-            }:
+            if (
+                section.section_type
+                in {
+                    JobSectionType.BENEFITS,
+                    JobSectionType.POSTING_METADATA,
+                }
+                and requirement_type not in CONSTRAINT_TYPES
+            ):
                 continue
             category = classify_category(text, section.section_type, requirement_type)
             high = category == RequirementCategory.REQUIRED or bool(

@@ -31,6 +31,7 @@ jobs:
       - run: mypy api evals scripts/evaluate_fit.py
       - run: pytest --cov=api --cov=evals --cov-report=term-missing
       - run: coverage report --include='evals/*' --fail-under=80
+      - run: coverage report --include='api/job_parser.py' --fail-under=80
 
   postgres-retrieval:
     runs-on: ubuntu-latest

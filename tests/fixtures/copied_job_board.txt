@@ -1,0 +1,59 @@
+Staff Software Engineer
+Example Systems
+United States
+Remote
+$160,000 - $240,000 a year
+Full-time
+
+Job details
+$160,000 - $240,000 a year
+401(k) 4% Match, 401(k), Health insurance, Paid time off, Vision insurance, Health savings account, Dental insurance, Flexible spending account
+Show 5 more
+Full-time
+Remote in United States
+
+Full job description
+Staff Software Engineer (Backend and Platform)
+
+We're Example Systems. Our company enjoys discussing Kubernetes and sharing pictures of vacations.
+Our culture includes outdoor activities and team events.
+You’re comfortable explaining technical decisions and mentoring engineers.
+
+You’ll fit right in if:
+You collaborate with engineering and product teams to clarify ambiguous projects.
+
+‍What You’ll Do:
+Build TypeScript and React applications for clients.
+Mentor engineers and improve code review practices.
+Build employee benefits APIs using Python and FastAPI.
+
+Who Should Apply?
+You have at least five years of professional software development experience.
+You have familiarity with Kubernetes and Terraform.
+
+Why Example Systems?
+Our company sponsors conferences, hobby groups, and team retreats.
+
+Company benefits:
+Healthcare:
+Medical, dental, and vision insurance
+Health savings account (HSA)
+Flexible spending account (FSA)
+Retirement:
+401(k) plan with 4% employer match
+Paid Time Off:
+20 days vacation a year
+
+Job Type: Full-time
+Pay: $160,000.00 - $240,000.00 per year
+
+Benefits:
+401(k)
+Flexible schedule
+Health insurance
+Life insurance
+Paid time off
+
+Experience:
+Software Engineer: 5 years (Required)
+Work Location: Remote
