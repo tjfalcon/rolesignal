@@ -27,6 +27,7 @@ class AssessmentStatus(StrEnum):
 
 
 class JobSectionType(StrEnum):
+    POSTING_METADATA = "posting_metadata"
     COMPANY_DESCRIPTION = "company_description"
     POSITION_SUMMARY = "position_summary"
     RESPONSIBILITIES = "responsibilities"

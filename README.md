@@ -28,7 +28,7 @@ This repository is a public applied-AI engineering case study by Thomas Falcon. 
 
 The default is a **deterministic, zero-cost demo**. It does not call OpenAI and does not pretend that local hashing is a production embedding model. An OpenAI adapter is included behind a narrow interface for the upcoming live retrieval experiment; hosted model use remains disabled until it is integrated into the measured path.
 
-## Measured baseline
+## Original retrieval baseline
 
 | Check | Current result |
 |---|---:|
@@ -36,13 +36,21 @@ The default is a **deterministic, zero-cost demo**. It does not call OpenAI and 
 | Recall@5 | 100% (30/30) |
 | Automated tests | 32 passing with PostgreSQL enabled |
 | Python coverage | 91% with PostgreSQL integration tests |
-| Known fabricated candidate claims in tests | 0 |
+| Positive citation IDs | Resolve to returned evidence; semantic support still needs evaluation |
 | Hosted model calls in default demo | 0 |
 
 This small, deliberately clear fixture set is a baseline—not a general-quality claim. PostgreSQL
 full-text search and pgvector retrieval are implemented and integration-tested. The remaining
 Week 2 work expands the evaluation set with hard negatives, conflicting evidence, irrelevant
 retrieval, and paraphrase stress cases.
+
+The active [core signal track](https://github.com/tjfalcon/rolesignal/issues/41) starts with a
+[draft fit rubric](docs/FIT_RUBRIC.md) and a [whole-job baseline report](evals/CORE_FIT_BASELINE.md).
+Its 12 authored synthetic jobs cover proposed strong, plausible, stretch, poor, incomplete,
+conflicting, and hard-negative cases. All labels await Thomas's review. The current API has no
+overall fit verdict, and the report records that absence explicitly. It also exposes cases where
+valid citation IDs accompany unsupported conclusions, including CUDA kernel work cited to
+commerce experience and production Python duration inferred from prototypes.
 
 ## Architecture
 
@@ -131,13 +139,17 @@ precedence and leave nested FastAPI routes unreachable.
 
 ```bash
 .venv/bin/ruff check .
-.venv/bin/mypy api
-.venv/bin/pytest --cov=api --cov-report=term-missing
+.venv/bin/mypy api evals scripts/evaluate_fit.py
+.venv/bin/pytest --cov=api --cov=evals --cov-report=term-missing
+.venv/bin/coverage report --include='evals/*' --fail-under=80
 npm run typecheck
 npm run build
 ```
 
 CI runs the TypeScript build and Python test/evaluation lanes independently.
+Run `.venv/bin/python -m scripts.evaluate_fit` for the offline whole-job report, or add
+`--format json` for individual checks and separate strong/poor error lists. This command uses
+only pinned repository fixtures, never the configured database or a model provider.
 
 ## Privacy and truthfulness
 
