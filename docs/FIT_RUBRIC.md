@@ -30,7 +30,7 @@ Evaluate these dimensions separately before synthesizing a signal:
 | Signal | Proposed interpretation |
 | --- | --- |
 | Strong fit | Direct evidence covers the central work and consequential qualifications; no established decisive gap or confirmed blocker. |
-| Plausible fit | Credible direct or transferable core experience, with a bounded gap or uncertainty that merits discussion. |
+| Plausible fit | Credible direct or transferable core experience, with a bounded gap or uncertainty about the core work that merits discussion. |
 | Stretch | Meaningful transferable evidence exists, but a central responsibility or substantial mandatory qualification remains unproved. |
 | Poor fit | The central work has little relevant support, or a confirmed material constraint blocks the role. Matching secondary skills cannot override that reason. |
 | Insufficient information | Too little reliable job or candidate information to judge the central work; ask for the missing information. |
@@ -40,10 +40,18 @@ information, consider confirmed blockers and decisive core gaps before preferenc
 unconfirmed conditions from established conflicts. Contradictory employer statements remain an
 explicit question, rather than a guessed requirement or a guessed candidate incompatibility.
 
-**Open calibration decision:** can otherwise strong core evidence retain Strong fit while salary,
-location, or authorization remain unconfirmed, or should the label be capped at Plausible fit?
-The two proposed strong examples currently take the former approach. This is provisional; no
-production threshold is established until Thomas reviews it. All 12 cases remain draft.
+**Confirmed by Thomas, 2026-11-25:** unknown salary, location, or work authorization must not cap
+an otherwise Strong fit at Plausible fit. Keep the fit signal and attention state separate.
+Unresolved terms, including contradictory attendance statements, require manual review; they are
+not a confirmed candidate incompatibility. Confirmed material blockers still affect the signal.
+Individual case judgments and the rest of the rubric remain draft.
+
+For the result UI in #37, show an amber attention icon with the text **Needs review** beside the
+fit label when unknowns remain. The text and icon must communicate the state without relying on
+color alone. Expanding the indicator should list the unresolved items, such as salary, location,
+and authorization, with a focused confirmation question. For example, **Strong fit · Needs review**
+means the work matches while those conditions await confirmation. Clearing the last unresolved
+item clears the indicator; confirming a blocker can also change the fit result.
 
 The mixed web/CUDA example is proposed Poor fit because the role's central work is kernel research;
 commerce experience supports only a secondary qualification. The Python/GPU example is proposed
@@ -61,6 +69,8 @@ These boundaries are deliberate review targets, not calibrated rules.
   `null` if none is identified.
 - `unknowns`: explicit unresolved information keys, such as `salary`, `location`,
   `work_authorization`, `core_work`, or unverified duration. Omission is not confirmation.
+- `needs_review`: an independent attention flag, true when `unknowns` is nonempty. Validation
+  prevents unresolved items from being hidden behind a false flag. This flag does not cap fit.
 - `what_would_change`: a focused question or new evidence that could alter the conclusion.
 
 Requirement annotations distinguish core, mandatory, preference, and constraint roles; label
@@ -115,6 +125,8 @@ The JSON report includes:
   dangling IDs, invented sources, altered claims, and candidate citations on missing/unknown rows.
   Reference validity alone still does not establish semantic support.
 - Separate counts of proposed labels versus returned labels, including `unavailable`.
+- Expected and actual attention flags, scored separately from fit. When no decision exists,
+  actual attention is `null`, rather than falsely indicating that everything is confirmed.
 - False-positive Strong fit case IDs: predicted Strong fit with a different expected label.
 - False-negative Poor fit case IDs: predicted Poor fit with a different expected label.
   These lists include only returned decisions. Zero entries with zero decisions conveys no quality.

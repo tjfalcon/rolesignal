@@ -1,10 +1,12 @@
 # Core fit baseline
 
-Rubric: `core-fit-v0` (draft). Reviewed cases: 0/12.
+Rubric: `core-fit-v0.1` (draft). Reviewed cases: 0/12.
 
 All jobs are authored synthetic examples. Candidate evidence is pinned to the repository's sanitized fixtures. Draft expectations are proposals, not Thomas's judgments.
 
 The current analyzer returns no overall fit decision. Unavailable decisions are not correct predictions or classification errors. Evidence coverage is not used as a verdict.
+
+Unknown salary, location, or work authorization does not cap an otherwise strong match. The proposed Needs review indicator is separate from the fit signal.
 
 Available decisions: 0/12. Requirement checks: 99/127 passed.
 
@@ -12,20 +14,20 @@ False-positive strong and false-negative poor lists are reported in JSON only fo
 
 Candidate scenario context and free-text reason quality require human review. The current analyzer does not consume scenario context.
 
-| Case | Proposed signal | Actual signal | Failed requirement checks |
-| --- | --- | --- | ---: |
-| commerce-platform | strong_fit | unavailable | 2 |
-| preference-is-not-core | strong_fit | unavailable | 2 |
-| prototype-to-production | plausible_fit | unavailable | 4 |
-| python-is-not-gpu-ownership | stretch | unavailable | 3 |
-| gpu-research | poor_fit | unavailable | 3 |
-| marketing-only | insufficient_information | unavailable | 0 |
-| short-blurb | insufficient_information | unavailable | 0 |
-| contradictory-location | plausible_fit | unavailable | 5 |
-| confirmed-location-blocker | poor_fit | unavailable | 3 |
-| years-not-implied-by-mention | stretch | unavailable | 3 |
-| posting-instruction-is-data | poor_fit | unavailable | 3 |
-| web-keywords-hide-core-gap | poor_fit | unavailable | 0 |
+| Case | Proposed signal | Proposed attention | Actual signal | Failed checks |
+| --- | --- | --- | --- | ---: |
+| commerce-platform | strong_fit | Needs review | unavailable | 2 |
+| preference-is-not-core | strong_fit | Needs review | unavailable | 2 |
+| prototype-to-production | plausible_fit | Needs review | unavailable | 4 |
+| python-is-not-gpu-ownership | stretch | Needs review | unavailable | 3 |
+| gpu-research | poor_fit | Needs review | unavailable | 3 |
+| marketing-only | insufficient_information | Needs review | unavailable | 0 |
+| short-blurb | insufficient_information | Needs review | unavailable | 0 |
+| contradictory-location | strong_fit | Needs review | unavailable | 5 |
+| confirmed-location-blocker | poor_fit | Needs review | unavailable | 3 |
+| years-not-implied-by-mention | stretch | Needs review | unavailable | 3 |
+| posting-instruction-is-data | poor_fit | Needs review | unavailable | 3 |
+| web-keywords-hide-core-gap | poor_fit | Needs review | unavailable | 0 |
 
 ## commerce-platform
 
@@ -227,7 +229,7 @@ Location
 - This role requires onsite attendance in New York City five days per week.
 ```
 
-Proposed decisive reason: The core platform work matches, but contradictory attendance terms need clarification.
+Proposed decisive reason: The core platform work matches directly; contradictory attendance terms require manual review and do not establish a candidate blocker.
 
 Proposed top gap: The posting simultaneously requires remote and full-time onsite work.
 

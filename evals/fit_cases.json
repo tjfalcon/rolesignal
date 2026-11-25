@@ -1,5 +1,5 @@
 {
-  "rubric_version": "core-fit-v0",
+  "rubric_version": "core-fit-v0.1",
   "rubric_status": "draft",
   "cases": [
     {
@@ -57,7 +57,8 @@
           "location",
           "work_authorization"
         ],
-        "what_would_change": "A confirmed material constraint or additional mandatory work could change the result."
+        "what_would_change": "A confirmed material constraint or additional mandatory work could change the result.",
+        "needs_review": true
       },
       "review": {
         "status": "draft",
@@ -124,7 +125,8 @@
           "location",
           "work_authorization"
         ],
-        "what_would_change": "Confirm whether cluster operations are actually a core responsibility."
+        "what_would_change": "Confirm whether cluster operations are actually a core responsibility.",
+        "needs_review": true
       },
       "review": {
         "status": "draft",
@@ -194,7 +196,8 @@
           "location",
           "work_authorization"
         ],
-        "what_would_change": "A reviewed example of operating a production Python service could strengthen the signal."
+        "what_would_change": "A reviewed example of operating a production Python service could strengthen the signal.",
+        "needs_review": true
       },
       "review": {
         "status": "draft",
@@ -262,7 +265,8 @@
           "location",
           "work_authorization"
         ],
-        "what_would_change": "Direct reviewed CUDA and GPU infrastructure evidence would be needed."
+        "what_would_change": "Direct reviewed CUDA and GPU infrastructure evidence would be needed.",
+        "needs_review": true
       },
       "review": {
         "status": "draft",
@@ -326,7 +330,8 @@
           "location",
           "work_authorization"
         ],
-        "what_would_change": "New direct research and kernel engineering evidence would be needed."
+        "what_would_change": "New direct research and kernel engineering evidence would be needed.",
+        "needs_review": true
       },
       "review": {
         "status": "draft",
@@ -365,7 +370,8 @@
           "work_authorization",
           "core_work"
         ],
-        "what_would_change": "Provide the responsibilities and mandatory qualifications."
+        "what_would_change": "Provide the responsibilities and mandatory qualifications.",
+        "needs_review": true
       },
       "review": {
         "status": "draft",
@@ -401,7 +407,8 @@
           "work_authorization",
           "core_work"
         ],
-        "what_would_change": "Provide at least the main responsibilities and essential qualifications."
+        "what_would_change": "Provide at least the main responsibilities and essential qualifications.",
+        "needs_review": true
       },
       "review": {
         "status": "draft",
@@ -453,9 +460,9 @@
       ],
       "excluded_texts": [],
       "expected": {
-        "signal": "plausible_fit",
+        "signal": "strong_fit",
         "decisive_reason": {
-          "explanation": "The core platform work matches, but contradictory attendance terms need clarification.",
+          "explanation": "The core platform work matches directly; contradictory attendance terms require manual review and do not establish a candidate blocker.",
           "requirement_texts": [
             "Modernize a digital commerce platform using Next.js, React, and TypeScript.",
             "This role is fully remote within the United States.",
@@ -480,7 +487,8 @@
           "location",
           "work_authorization"
         ],
-        "what_would_change": "Clarify the actual attendance requirement and confirm candidate compatibility."
+        "what_would_change": "Clarify the actual attendance requirement and confirm candidate compatibility.",
+        "needs_review": true
       },
       "review": {
         "status": "draft",
@@ -552,7 +560,8 @@
           "location",
           "work_authorization"
         ],
-        "what_would_change": "An employer-approved remote arrangement could remove the blocker."
+        "what_would_change": "An employer-approved remote arrangement could remove the blocker.",
+        "needs_review": true
       },
       "review": {
         "status": "draft",
@@ -623,7 +632,8 @@
           "work_authorization",
           "production_python_years"
         ],
-        "what_would_change": "Confirm dated production experience; do not infer years from a technology mention."
+        "what_would_change": "Confirm dated production experience; do not infer years from a technology mention.",
+        "needs_review": true
       },
       "review": {
         "status": "draft",
@@ -680,7 +690,8 @@
           "location",
           "work_authorization"
         ],
-        "what_would_change": "Only reviewed candidate evidence can change this gap."
+        "what_would_change": "Only reviewed candidate evidence can change this gap.",
+        "needs_review": true
       },
       "review": {
         "status": "draft",
@@ -751,7 +762,8 @@
           "location",
           "work_authorization"
         ],
-        "what_would_change": "Clarify the actual daily work; web keywords alone cannot establish a strong fit."
+        "what_would_change": "Clarify the actual daily work; web keywords alone cannot establish a strong fit.",
+        "needs_review": true
       },
       "review": {
         "status": "draft",

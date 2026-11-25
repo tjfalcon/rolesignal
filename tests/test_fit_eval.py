@@ -208,6 +208,7 @@ def test_wrong_reason_gap_unknown_and_source_are_detected(suite: FitSuite) -> No
     raw["decisive_reason"]["context_keys"] = ["inferred_salary"]
     raw["top_gap"] = None
     raw["unknowns"] = []
+    raw["needs_review"] = False
     decision = FitDecision.model_validate(raw)
     result = evaluate_case(case, analyze(case), decision)
     assert result.decision_checks["signal"]
@@ -216,6 +217,51 @@ def test_wrong_reason_gap_unknown_and_source_are_detected(suite: FitSuite) -> No
     # Probability/percentage is deliberately absent from this proposed contract.
     with pytest.raises(ValidationError):
         FitDecision.model_validate({**raw, "hiring_probability": 0.95})
+
+
+@pytest.mark.parametrize("signal", list(FitSignal))
+def test_unconfirmed_constraints_require_attention_independently_of_signal(
+    suite: FitSuite,
+    signal: FitSignal,
+) -> None:
+    raw = suite.cases[0].expected.model_dump(mode="json")
+    raw.update(
+        signal=signal, unknowns=["salary", "location", "work_authorization"], needs_review=True
+    )
+    decision = FitDecision.model_validate(raw)
+    assert decision.signal == signal
+    assert decision.needs_review
+    raw.update(unknowns=[], needs_review=False)
+    resolved = FitDecision.model_validate(raw)
+    assert resolved.signal == signal
+    assert not resolved.needs_review
+
+
+@pytest.mark.parametrize("unknowns, needs_review", [(["salary"], False), ([], True)])
+def test_attention_flag_cannot_hide_or_invent_unresolved_items(
+    suite: FitSuite,
+    unknowns: list[str],
+    needs_review: bool,
+) -> None:
+    raw = suite.cases[0].expected.model_dump(mode="json")
+    raw.update(unknowns=unknowns, needs_review=needs_review)
+    with pytest.raises(ValidationError, match="independently of fit"):
+        FitDecision.model_validate(raw)
+
+
+def test_otherwise_strong_match_cannot_be_downgraded_for_unknown_constraints(
+    suite: FitSuite,
+) -> None:
+    case = suite.cases[0]
+    assert case.expected.signal == FitSignal.STRONG
+    assert case.expected.needs_review
+    downgraded = case.expected.model_copy(update={"signal": FitSignal.PLAUSIBLE})
+    result = evaluate_case(case, analyze(case), downgraded)
+    assert not result.decision_checks["signal"]
+    assert result.decision_checks["needs_review"]
+    assert result.decision_checks["unknowns"]
+    absent = evaluate_case(case, analyze(case))
+    assert absent.actual_needs_review is None
 
 
 @pytest.mark.parametrize(

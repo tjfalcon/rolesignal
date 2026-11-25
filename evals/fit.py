@@ -46,7 +46,14 @@ class FitDecision(StrictModel):
     decisive_reason: Finding
     top_gap: Finding | None
     unknowns: list[str]
+    needs_review: bool
     what_would_change: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_attention_for_unknowns(self) -> Self:
+        if self.needs_review != bool(self.unknowns):
+            raise ValueError("needs_review must reflect unresolved unknowns, independently of fit")
+        return self
 
 
 class RequirementExpectation(StrictModel):
@@ -135,6 +142,8 @@ class CaseResult(StrictModel):
     review_status: str
     expected_signal: FitSignal
     actual_signal: FitSignal | None
+    expected_needs_review: bool
+    actual_needs_review: bool | None
     input_error: str | None
     checks: dict[str, bool]
     decision_checks: dict[str, bool]
@@ -244,6 +253,7 @@ def evaluate_case(
             and set(decision.top_gap.context_keys) == set(wanted.top_gap.context_keys)
         )
         decision_checks["unknowns"] = set(decision.unknowns) == set(wanted.unknowns)
+        decision_checks["needs_review"] = decision.needs_review == wanted.needs_review
         findings = [decision.decisive_reason] + ([decision.top_gap] if decision.top_gap else [])
         decision_checks["source_references"] = analysis is not None and all(
             set(item.requirement_texts) <= requirements.keys()
@@ -256,6 +266,8 @@ def evaluate_case(
         review_status=case.review.status,
         expected_signal=case.expected.signal,
         actual_signal=decision.signal if decision else None,
+        expected_needs_review=case.expected.needs_review,
+        actual_needs_review=decision.needs_review if decision else None,
         input_error=input_error,
         checks=checks,
         decision_checks=decision_checks,
@@ -320,6 +332,9 @@ def markdown_report(suite: FitSuite, results: list[CaseResult]) -> str:
         "The current analyzer returns no overall fit decision. Unavailable decisions are not "
         "correct predictions or classification errors. Evidence coverage is not used as a verdict.",
         "",
+        "Unknown salary, location, or work authorization does not cap an otherwise strong match. "
+        "The proposed Needs review indicator is separate from the fit signal.",
+        "",
         f"Available decisions: {summary['decision_count']}/{len(results)}. "
         f"Requirement checks: {summary['requirement_checks_passed']}/"
         f"{summary['requirement_checks_total']} passed.",
@@ -330,13 +345,14 @@ def markdown_report(suite: FitSuite, results: list[CaseResult]) -> str:
         "Candidate scenario context and free-text reason quality require human review. "
         "The current analyzer does not consume scenario context.",
         "",
-        "| Case | Proposed signal | Actual signal | Failed requirement checks |",
-        "| --- | --- | --- | ---: |",
+        "| Case | Proposed signal | Proposed attention | Actual signal | Failed checks |",
+        "| --- | --- | --- | --- | ---: |",
     ]
     for result in results:
         failed_count = sum(not v for v in result.checks.values())
+        attention = "Needs review" if result.expected_needs_review else "None"
         lines.append(
-            f"| {result.case_id} | {result.expected_signal} | "
+            f"| {result.case_id} | {result.expected_signal} | {attention} | "
             f"{result.actual_signal or 'unavailable'} | {failed_count} |"
         )
     for case, result in zip(suite.cases, results, strict=True):
